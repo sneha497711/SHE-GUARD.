@@ -1,0 +1,2502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SheGuard — Stay Safe, Stay Seen</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <!-- Leaflet for real map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- NO type="module" — plain scripts so onclick= handlers work -->
+</head>
+<body>
+
+<!-- ── AUTHENTICATION MODAL (LOGIN & REGISTRATION) ── -->
+<div id="authModal" class="setup-screen">
+  <div class="setup-card auth-card">
+
+    <div class="setup-hero">
+      <div class="setup-logo"><i class="fas fa-shield-heart"></i></div>
+      <h2>SHE-GUARD</h2>
+      <p>Secure Women Safety &amp; Emergency Response System</p>
+    </div>
+
+    <!-- Auth Tabs Switcher -->
+    <div class="auth-tabs">
+      <button class="auth-tab-btn active" id="authTabBtnLogin" onclick="sgSwitchAuthTab('login')">
+        <i class="fas fa-right-to-bracket"></i> Login
+      </button>
+      <button class="auth-tab-btn" id="authTabBtnReg" onclick="sgSwitchAuthTab('register')">
+        <i class="fas fa-user-plus"></i> Register
+      </button>
+    </div>
+
+    <!-- ── FORM: LOGIN ── -->
+    <div id="authLoginForm" class="auth-form-panel">
+      <div class="form-group">
+        <label>Mobile Number or Email <span class="req">*</span></label>
+        <div class="input-icon-wrap">
+          <i class="fas fa-user-shield"></i>
+          <input type="text" id="loginIdentifier" placeholder="e.g. 9876543210 or user@example.com" autocomplete="username"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Password <span class="req">*</span></label>
+        <div class="input-icon-wrap">
+          <i class="fas fa-lock"></i>
+          <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password"/>
+          <button type="button" class="btn-toggle-eye" onclick="togglePassVisibility('loginPassword', this)">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="loginErrorAlert" class="auth-alert error hidden"></div>
+
+      <button class="btn-primary full-width mt-sm" id="loginSubmitBtn" onclick="sgHandleLogin(event)">
+        Login <i class="fas fa-arrow-right"></i>
+      </button>
+
+      <div class="auth-footer-link">
+        <span>New to SHE-GUARD?</span>
+        <a href="javascript:void(0)" onclick="sgSwitchAuthTab('register')">Create an account</a>
+      </div>
+    </div>
+
+    <!-- ── FORM: REGISTRATION (Multi-step) ── -->
+    <div id="authRegForm" class="auth-form-panel hidden">
+
+      <!-- Step Indicator -->
+      <div class="step-indicator">
+        <div class="step-dot active" id="regDot1" data-n="1"></div>
+        <div class="step-line"></div>
+        <div class="step-dot" id="regDot2" data-n="2"></div>
+        <div class="step-line"></div>
+        <div class="step-dot" id="regDot3" data-n="3"></div>
+      </div>
+
+      <!-- REG STEP 1: Personal Details & Password -->
+      <div id="regStep1" class="setup-step active">
+        <div class="step-title"><i class="fas fa-user-shield"></i> Account Registration</div>
+
+        <div class="form-group">
+          <label>Full Name <span class="req">*</span></label>
+          <input type="text" id="regFullName" placeholder="e.g. Priya Sharma"/>
+        </div>
+
+        <div class="form-group">
+          <label>Mobile Number <span class="req">*</span></label>
+          <div class="input-prefix-wrap">
+            <span class="input-prefix">+91</span>
+            <input type="tel" id="regMobile" placeholder="10-digit mobile number" maxlength="10"/>
+          </div>
+          <span class="hint-text">An OTP verification code will be sent to this number.</span>
+        </div>
+
+        <div class="form-group">
+          <label>Email Address <span class="req">*</span></label>
+          <input type="email" id="regEmail" placeholder="e.g. priya@example.com"/>
+        </div>
+
+        <div class="form-group">
+          <label>Password <span class="req">*</span></label>
+          <div class="input-icon-wrap">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="regPassword" placeholder="Minimum 6 characters"/>
+            <button type="button" class="btn-toggle-eye" onclick="togglePassVisibility('regPassword', this)">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Confirm Password <span class="req">*</span></label>
+          <div class="input-icon-wrap">
+            <i class="fas fa-shield-check"></i>
+            <input type="password" id="regConfirmPassword" placeholder="Re-enter password"/>
+            <button type="button" class="btn-toggle-eye" onclick="togglePassVisibility('regConfirmPassword', this)">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="regStep1Error" class="auth-alert error hidden"></div>
+
+        <button class="btn-primary full-width mt-sm" id="regSendOtpBtn" onclick="sgSubmitRegStep1(event)">
+          Verify Mobile &amp; Continue <i class="fas fa-arrow-right"></i>
+        </button>
+
+        <div class="auth-footer-link">
+          <span>Already registered?</span>
+          <a href="javascript:void(0)" onclick="sgSwitchAuthTab('login')">Log in here</a>
+        </div>
+      </div>
+
+      <!-- REG STEP 2: Mobile OTP Verification -->
+      <div id="regStep2" class="setup-step hidden">
+        <div class="step-title"><i class="fas fa-mobile-screen-button"></i> Mobile OTP Verification</div>
+        <p class="otp-subtext">
+          Enter the 6-digit verification code sent to <strong id="regOtpPhoneDisplay">+91 XXXXXXXXXX</strong>
+          <button class="btn-text-edit" onclick="sgGoRegStep(1)"><i class="fas fa-pen"></i> Edit</button>
+        </p>
+
+        <!-- 6 OTP Input Boxes -->
+        <div class="otp-boxes">
+          <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]*"/>
+          <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]*"/>
+          <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]*"/>
+          <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]*"/>
+          <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]*"/>
+          <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]*"/>
+        </div>
+
+        <!-- Dev Mode OTP Helper Notice -->
+        <div id="devOtpNotice" class="dev-otp-badge hidden"></div>
+
+        <div class="resend-row">
+          <button class="btn-resend" id="regResendOtpBtn" onclick="sgResendOtp()" disabled>
+            <i class="fas fa-redo"></i> Resend OTP
+          </button>
+          <span class="cooldown-timer" id="otpCooldownTimer">(in 60s)</span>
+        </div>
+
+        <div id="regStep2Error" class="auth-alert error hidden"></div>
+
+        <div class="setup-nav mt-sm">
+          <button class="btn-outline" onclick="sgGoRegStep(1)"><i class="fas fa-arrow-left"></i> Back</button>
+          <button class="btn-primary" id="regVerifyOtpBtn" onclick="sgSubmitRegStep2(event)">
+            Verify &amp; Create Account <i class="fas fa-shield-check"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- REG STEP 3: Complete Profile (Medical & Emergency) -->
+      <div id="regStep3" class="setup-step hidden">
+        <div class="step-title"><i class="fas fa-notes-medical"></i> Safety Profile Setup</div>
+        <p class="section-intro">This information will be dispatched to your trusted contacts &amp; emergency responders on SOS.</p>
+
+        <div class="form-row-2">
+          <div class="form-group">
+            <label>Age</label>
+            <input type="number" id="regAge" placeholder="e.g. 22" min="1" max="120"/>
+          </div>
+          <div class="form-group">
+            <label>Blood Group <span class="req">*</span></label>
+            <select id="regBlood">
+              <option value="Unknown">Select</option>
+              <option value="A+">A+</option>
+              <option value="A−">A−</option>
+              <option value="B+">B+</option>
+              <option value="B−">B−</option>
+              <option value="AB+">AB+</option>
+              <option value="AB−">AB−</option>
+              <option value="O+">O+</option>
+              <option value="O−">O−</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Home Address</label>
+          <input type="text" id="regAddress" placeholder="House / Flat No., Street"/>
+        </div>
+
+        <div class="form-row-3">
+          <div class="form-group">
+            <label>City</label>
+            <input type="text" id="regCity" placeholder="e.g. Hyderabad"/>
+          </div>
+          <div class="form-group">
+            <label>State</label>
+            <input type="text" id="regState" placeholder="e.g. Telangana"/>
+          </div>
+          <div class="form-group">
+            <label>PIN Code</label>
+            <input type="text" id="regPin" placeholder="e.g. 500001"/>
+          </div>
+        </div>
+
+        <!-- Medical Info -->
+        <div class="sub-form-card">
+          <div class="sub-form-title"><i class="fas fa-heart-pulse"></i> Medical Details</div>
+          <div class="form-group">
+            <label>Medical Conditions</label>
+            <input type="text" id="regConditions" placeholder="e.g. Asthma, Diabetes, None"/>
+          </div>
+          <div class="form-group">
+            <label>Allergies</label>
+            <input type="text" id="regAllergies" placeholder="e.g. Penicillin, Peanuts, None"/>
+          </div>
+          <div class="form-group">
+            <label>Current Medication</label>
+            <input type="text" id="regMedication" placeholder="e.g. Inhaler"/>
+          </div>
+          <div class="form-group">
+            <label>Additional Medical Notes</label>
+            <input type="text" id="regMedicalNotes" placeholder="Any vital health instructions"/>
+          </div>
+        </div>
+
+        <!-- Emergency Details -->
+        <div class="sub-form-card mt-sm">
+          <div class="sub-form-title"><i class="fas fa-phone-volume"></i> Primary Emergency Contact <span class="req">*</span></div>
+          <div class="form-group">
+            <label>Contact Name <span class="req">*</span></label>
+            <input type="text" id="regEmName" placeholder="e.g. Mom, Dad, Sister"/>
+          </div>
+          <div class="form-group">
+            <label>Contact Mobile Number <span class="req">*</span></label>
+            <input type="tel" id="regEmPhone" placeholder="+91 XXXXXXXXXX"/>
+          </div>
+          <div class="form-group">
+            <label>Relationship</label>
+            <select id="regEmRel">
+              <option value="Family">Family</option>
+              <option value="Mother">Mother</option>
+              <option value="Father">Father</option>
+              <option value="Sibling">Sibling</option>
+              <option value="Partner">Partner</option>
+              <option value="Friend">Friend</option>
+              <option value="Colleague">Colleague</option>
+              <option value="Neighbor">Neighbor</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Additional Emergency Notes</label>
+            <input type="text" id="regEmNotes" placeholder="Special emergency notes"/>
+          </div>
+        </div>
+
+        <div id="regStep3Error" class="auth-alert error hidden"></div>
+
+        <button class="btn-primary full-width mt-sm" id="regCompleteProfileBtn" onclick="sgSubmitRegStep3(event)">
+          Complete Setup &amp; Enter SHE-GUARD <i class="fas fa-shield-heart"></i>
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- ── PERMISSION MODAL ── -->
+<div id="permissionModal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <div class="modal-icon pulse-pink"><i class="fas fa-shield-heart"></i></div>
+    <h2>SheGuard needs access</h2>
+    <p>Permissions run in the background to protect you 24/7 during emergencies.</p>
+    <div class="perm-list">
+      <div class="perm-item" id="perm-mic">
+        <i class="fas fa-microphone"></i>
+        <div><strong>Microphone</strong><span>Always-on voice keyword monitoring &amp; SOS audio</span></div>
+        <button class="grant-btn" id="grantMicBtn" onclick="requestMic()">Grant</button>
+      </div>
+      <div class="perm-item" id="perm-loc">
+        <i class="fas fa-location-dot"></i>
+        <div><strong>Location</strong><span>Share live GPS with contacts &amp; police on SOS</span></div>
+        <button class="grant-btn" id="grantLocBtn" onclick="requestLocation()">Grant</button>
+      </div>
+      <div class="perm-item" id="perm-motion">
+        <i class="fas fa-mobile-screen-button"></i>
+        <div><strong>Motion Sensor</strong><span>Always-on shake detection to trigger SOS</span></div>
+        <button class="grant-btn" id="grantMotionBtn" onclick="requestMotionPerm()">Grant</button>
+      </div>
+      <div class="perm-item" id="perm-notif">
+        <i class="fas fa-bell"></i>
+        <div><strong>Push Notifications</strong><span>Instant emergency dispatch &amp; status alerts</span></div>
+        <button class="grant-btn" id="grantNotifBtn" onclick="requestNotifPerm()">Grant</button>
+      </div>
+    </div>
+    <button class="btn-primary full-width" id="continueBtn" onclick="closePermModal()" disabled>Start Monitoring →</button>
+    <p class="perm-note">Grant permissions above to continue.</p>
+  </div>
+</div>
+
+<!-- ── NIGHT MODE BANNER ── -->
+<div class="night-banner hidden" id="nightBanner">
+  <i class="fas fa-moon"></i>
+  <span>Night Mode active — Enhanced sensitivity ON (6 PM – 6 AM)</span>
+</div>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="logo">
+    <span class="logo-icon"><i class="fas fa-shield-heart"></i></span>
+    <span>She<strong>Guard</strong></span>
+  </div>
+  <div class="header-right">
+    <!-- Logged in user pill with logout button -->
+    <div id="userHeaderWrap" class="user-header-wrap hidden"></div>
+
+    <div class="status-pill" id="statusPill">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Safe</span>
+    </div>
+    <button class="icon-btn" onclick="openSettings()"><i class="fas fa-sliders"></i></button>
+  </div>
+</header>
+
+<!-- ── MAIN ── -->
+<main>
+
+  <!-- SOS SECTION -->
+  <section class="sos-section">
+
+    <!-- Always-on monitor status chips -->
+    <div class="monitor-strips">
+      <div class="monitor-chip" id="voiceChip">
+        <i class="fas fa-microphone-lines"></i>
+        <span id="voiceChipText">Voice: Starting…</span>
+        <span class="chip-dot"></span>
+      </div>
+      <div class="monitor-chip" id="motionChip">
+        <i class="fas fa-mobile-screen-button"></i>
+        <span>Motion: Active</span>
+        <span class="chip-dot"></span>
+      </div>
+    </div>
+
+    <!-- SOS Ring + Button -->
+    <div class="sos-ring" id="sosRing">
+      <div class="sos-ring-inner"></div>
+      <button class="sos-btn" id="sosBtn"
+        onmousedown="startSOSTap()"
+        onmouseup="endSOSTap()"
+        ontouchstart="startSOSTap(event)"
+        ontouchend="endSOSTap()">
+        <span class="sos-label">SOS</span>
+        <span class="sos-sub">Hold 3 sec to activate</span>
+      </button>
+    </div>
+
+    <p class="sos-hint" id="sosHint">Press &amp; hold 3 seconds to send SOS alert</p>
+
+    <div class="sos-countdown hidden" id="sosCountdown">
+      <div class="countdown-track"><div class="countdown-bar" id="countdownBar"></div></div>
+      <span id="countdownNum">3</span>
+    </div>
+
+    <!-- Night status strip -->
+    <div class="night-status hidden" id="nightStatusStrip">
+      <i class="fas fa-moon"></i>
+      <span>Night Mode — High sensitivity monitoring active</span>
+    </div>
+
+  </section>
+
+  <!-- TABS -->
+  <nav class="tabs">
+    <button class="tab active" onclick="switchTab('contacts',this)"><i class="fas fa-users"></i> Contacts</button>
+    <button class="tab" onclick="switchTab('voice',this)"><i class="fas fa-waveform-lines"></i> Voice</button>
+    <button class="tab" onclick="switchTab('location',this)"><i class="fas fa-location-dot"></i> Location</button>
+    <button class="tab" onclick="switchTab('safe-route',this)"><i class="fas fa-route"></i> Safe Route</button>
+    <button class="tab" onclick="switchTab('fake-call',this)"><i class="fas fa-phone-arrow-down-left"></i> Fake Call</button>
+    <button class="tab" onclick="switchTab('chatbot',this)"><i class="fas fa-robot"></i> AI Assistant</button>
+    <button class="tab" onclick="switchTab('profile',this)"><i class="fas fa-user-circle"></i> Profile</button>
+    <button class="tab evidence-tab" id="evidenceTabBtn" onclick="switchTab('evidence',this)"><i class="fas fa-film"></i> Evidence</button>
+  </nav>
+
+  <!-- TAB: CONTACTS (Module 2: Emergency Contact Management) -->
+  <section class="tab-panel active" id="tab-contacts">
+    <!-- Emergency Services Helplines -->
+    <div class="helplines-section">
+      <div class="section-badge-title"><i class="fas fa-tower-broadcast"></i> Emergency Services &amp; Helplines</div>
+      <div class="helpline-grid" id="helplineServicesContainer"></div>
+    </div>
+
+    <!-- Personal Emergency Contacts Header & Action -->
+    <div class="panel-header mt-sm">
+      <div>
+        <h3>My Emergency Contacts</h3>
+        <span class="panel-subtitle">Notified in priority order during SOS</span>
+      </div>
+      <button class="btn-accent" onclick="openAddContact()"><i class="fas fa-user-plus"></i> Add Contact</button>
+    </div>
+
+    <!-- Family / Friends Group Filters -->
+    <div class="filter-pills-bar">
+      <button class="filter-pill active" onclick="sgFilterContactsByGroup('All', this)">All</button>
+      <button class="filter-pill" onclick="sgFilterContactsByGroup('Family', this)"><i class="fas fa-house-user"></i> Family</button>
+      <button class="filter-pill" onclick="sgFilterContactsByGroup('Friends', this)"><i class="fas fa-user-group"></i> Friends</button>
+      <button class="filter-pill" onclick="sgFilterContactsByGroup('Relatives', this)"><i class="fas fa-people-roof"></i> Relatives</button>
+      <button class="filter-pill" onclick="sgFilterContactsByGroup('Colleagues', this)"><i class="fas fa-briefcase"></i> Colleagues</button>
+      <button class="filter-pill" onclick="sgFilterContactsByGroup('Other', this)">Other</button>
+    </div>
+
+    <div class="contacts-list" id="contactsList"></div>
+    <div class="empty-state hidden" id="contactsEmpty">
+      <i class="fas fa-user-plus"></i>
+      <p id="contactsEmptyMsg">No emergency contacts added yet.<br/>Add someone you trust.</p>
+      <button class="btn-primary mt-sm" onclick="openAddContact()"><i class="fas fa-plus"></i> Add First Contact</button>
+    </div>
+  </section>
+
+  <!-- TAB: VOICE -->
+  <section class="tab-panel" id="tab-voice">
+    <div class="voice-header">
+      <div class="voice-icon-wrap" id="voiceIconWrap">
+        <i class="fas fa-microphone"></i>
+        <div class="voice-ripple" id="voiceRipple"></div>
+      </div>
+      <div>
+        <h3>Voice Trigger</h3>
+        <p id="voiceStatusMsg">Always listening for your keyword</p>
+      </div>
+    </div>
+
+    <div class="active-badge">
+      <i class="fas fa-circle-dot"></i> Always-on monitoring is active
+    </div>
+
+    <div class="form-group">
+      <label>Trigger keyword / phrase</label>
+      <div class="keyword-input-wrap">
+        <input type="text" id="keywordInput" placeholder='e.g. "help me"'/>
+        <button class="save-kw-btn" onclick="saveKeyword()"><i class="fas fa-check"></i></button>
+      </div>
+      <span class="hint-text">Say this phrase aloud to instantly trigger SOS</span>
+    </div>
+
+    <div class="voice-log">
+      <span class="log-label"><i class="fas fa-history"></i> Recent detections</span>
+      <ul id="voiceLogList"><li class="log-empty">No activity yet</li></ul>
+    </div>
+  </section>
+
+  <!-- TAB: LOCATION (Module 4: Live GPS Tracking, Routing & Safe Zones) -->
+  <section class="tab-panel" id="tab-location">
+    <div class="panel-header">
+      <div>
+        <h3>Live GPS Tracking</h3>
+        <span class="panel-subtitle" id="trackingStatusText">Real-time GPS &amp; Navigation</span>
+      </div>
+      <div class="location-badge" id="locationBadge"><i class="fas fa-circle-dot"></i> Off</div>
+    </div>
+
+    <!-- Live Map View -->
+    <div class="map-placeholder" style="position:relative;min-height:300px;">
+      <div class="map-overlay" id="mapOverlay">
+        <i class="fas fa-map-location-dot"></i>
+        <p>Live Tracking Inactive</p>
+        <button class="btn-primary" onclick="startLocation()">Enable GPS Map</button>
+      </div>
+      <div class="map-grid"></div>
+    </div>
+
+    <!-- Tracking Controls & Live Coordinate Strip -->
+    <div class="tracking-controls-card mt-sm">
+      <div class="tcc-row">
+        <button class="btn-primary" id="btnStartTracking" onclick="sgStartTracking()"><i class="fas fa-play"></i> Start Tracking</button>
+        <button class="btn-outline hidden" id="btnStopTracking" onclick="sgStopTracking()"><i class="fas fa-pause"></i> Stop Tracking</button>
+        <button class="btn-accent" onclick="openSetDestinationModal()"><i class="fas fa-route"></i> Set Destination</button>
+      </div>
+      <div class="location-info-grid mt-sm">
+        <div class="lig-item"><i class="fas fa-crosshairs"></i> <span>Coords: <strong id="locCoords">—</strong></span></div>
+        <div class="lig-item"><i class="fas fa-bullseye"></i> <span>Accuracy: <strong id="locAccuracy">±10m</strong></span></div>
+        <div class="lig-item"><i class="fas fa-clock"></i> <span>Updated: <strong id="locTime">—</strong></span></div>
+      </div>
+    </div>
+
+    <!-- Active Route & ETA Panel (Shown when destination is set) -->
+    <div class="route-nav-panel hidden mt-sm" id="routeNavPanel">
+      <div class="rnp-header">
+        <div class="rnp-dest">
+          <i class="fas fa-flag-checkered text-rose"></i>
+          <div>
+            <span class="rnp-label">Destination</span>
+            <strong id="navDestName">Selected Destination</strong>
+          </div>
+        </div>
+        <button class="btn-text-edit" onclick="sgClearDestination()"><i class="fas fa-xmark"></i> Clear</button>
+      </div>
+      <div class="rnp-metrics">
+        <div class="rnp-metric">
+          <span class="rnp-val" id="navDistRemaining">—</span>
+          <span class="rnp-lbl">Distance Remaining</span>
+        </div>
+        <div class="rnp-metric">
+          <span class="rnp-val text-success" id="navEtaRemaining">—</span>
+          <span class="rnp-lbl">Estimated Arrival (ETA)</span>
+        </div>
+      </div>
+      <!-- Safe Route Suggestions -->
+      <div class="section-badge-title mt-sm"><i class="fas fa-shield-halved"></i> Route Suggestions</div>
+      <div class="route-cards-container" id="routeCardsContainer"></div>
+    </div>
+
+    <!-- Geofencing & Safe Zones Section -->
+    <div class="geofencing-section mt-md">
+      <div class="panel-header">
+        <div>
+          <h3><i class="fas fa-shield-heart text-success"></i> Safe Zones &amp; Geofencing</h3>
+          <span class="panel-subtitle">Instant alert when leaving configured zones</span>
+        </div>
+        <button class="btn-accent" onclick="openAddGeofenceModal()"><i class="fas fa-plus"></i> Add Safe Zone</button>
+      </div>
+      <div class="geofences-list" id="geofencesList"></div>
+      <div class="empty-state hidden" id="geofencesEmpty">
+        <i class="fas fa-draw-polygon"></i>
+        <p>No safe zones configured yet.<br/>Add Home, College, or Office.</p>
+        <button class="btn-primary mt-sm" onclick="openAddGeofenceModal()"><i class="fas fa-plus"></i> Add Home Safe Zone</button>
+      </div>
+    </div>
+
+    <!-- Family Location Sharing Section -->
+    <div class="family-tracking-section mt-md">
+      <div class="panel-header">
+        <div>
+          <h3><i class="fas fa-people-roof text-primary"></i> Family Live Tracking</h3>
+          <span class="panel-subtitle">View authorized family members' shared locations</span>
+        </div>
+        <button class="btn-accent" onclick="sgLoadFamilyLocations()"><i class="fas fa-arrows-rotate"></i> Refresh</button>
+      </div>
+
+      <div class="toggle-row mt-sm mb-sm">
+        <div><strong>Share My Live Location</strong><span>Allow trusted family contacts to see my location</span></div>
+        <label class="toggle"><input type="checkbox" id="shareFamilyToggle" checked onchange="sgToggleLocationSharing(this.checked)"/><span class="slider"></span></label>
+      </div>
+
+      <div class="family-tracking-list" id="familyTrackingList"></div>
+      <div class="empty-state hidden" id="familyTrackingEmpty">
+        <i class="fas fa-users-slash"></i>
+        <p>No family members sharing location yet.<br/>Add emergency contacts in the Contacts tab.</p>
+      </div>
+    </div>
+
+    <div class="toggle-row mt-md">
+      <div><strong>Auto-share on SOS</strong><span>Automatically share high-accuracy live GPS when SOS triggers</span></div>
+      <label class="toggle"><input type="checkbox" id="shareLocToggle" checked/><span class="slider"></span></label>
+    </div>
+  </section>
+
+  <!-- TAB: SAFE ROUTE (Module 10: Safe Route Recommendation & AI Risk Engine) -->
+  <section class="tab-panel" id="tab-safe-route">
+    <div class="panel-header">
+      <div>
+        <h3><i class="fas fa-shield-halved text-primary"></i> Safe Route Recommendation</h3>
+        <span class="panel-subtitle">AI multi-factor risk analysis &amp; well-lit corridor routing</span>
+      </div>
+      <div class="safety-indicator-badge"><i class="fas fa-microchip"></i> AI Engine Active</div>
+    </div>
+
+    <!-- Safe Route Input Card -->
+    <div class="safe-route-input-card mt-sm">
+      <div class="sri-field">
+        <label><i class="fas fa-location-crosshairs text-success"></i> Origin</label>
+        <div class="sri-input-wrap">
+          <input type="text" id="safeRouteOriginDisplay" value="📍 Current GPS Location" readonly/>
+        </div>
+      </div>
+
+      <div class="sri-field mt-sm">
+        <label><i class="fas fa-flag-checkered text-rose"></i> Destination <span class="req">*</span></label>
+        <div class="sri-input-wrap">
+          <input type="text" id="safeRouteDestInput" placeholder="Enter destination or landmark name…"/>
+          <input type="hidden" id="safeRouteDestLat"/>
+          <input type="hidden" id="safeRouteDestLng"/>
+        </div>
+      </div>
+
+      <!-- Quick Safe Destination Buttons -->
+      <div class="quick-dest-pills mt-sm">
+        <button type="button" class="q-pill" onclick="sgSetQuickSafeDest('police')"><i class="fas fa-shield-halved"></i> Nearest Police Post</button>
+        <button type="button" class="q-pill" onclick="sgSetQuickSafeDest('hospital')"><i class="fas fa-hospital"></i> Nearest Hospital</button>
+        <button type="button" class="q-pill" onclick="sgSetQuickSafeDest('safe_hub')"><i class="fas fa-building-shield"></i> Safe Public Hub</button>
+      </div>
+
+      <button class="btn-primary w-full mt-md" id="btnFindSafeRoute" onclick="sgTriggerSafeRouteAnalysis()">
+        <i class="fas fa-shield-halved"></i> Find Safest Route
+      </button>
+    </div>
+
+    <!-- Live Safe Route Interactive Map -->
+    <div class="safe-route-map-panel mt-md" style="position:relative;min-height:340px;border-radius:14px;overflow:hidden;border:1px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,0.3);">
+      <div id="sg-safe-route-leaflet-map" style="width:100%;height:340px;border-radius:14px;z-index:1;"></div>
+    </div>
+
+    <!-- Safety Map Layer Filters -->
+    <div class="map-layer-controls-card mt-md">
+      <div class="mlc-header">
+        <strong><i class="fas fa-layer-group"></i> Active Safety Map Layers</strong>
+        <span>Filter visible safety landmarks on map</span>
+      </div>
+      <div class="mlc-grid">
+        <label class="layer-pill">
+          <input type="checkbox" checked onchange="sgToggleSafetyMapLayer('police', this.checked)"/>
+          <span>👮 Police Patrols</span>
+        </label>
+        <label class="layer-pill">
+          <input type="checkbox" checked onchange="sgToggleSafetyMapLayer('cctv', this.checked)"/>
+          <span>📹 CCTV Zones</span>
+        </label>
+        <label class="layer-pill">
+          <input type="checkbox" checked onchange="sgToggleSafetyMapLayer('lighting', this.checked)"/>
+          <span>💡 Well-Lit Corridors</span>
+        </label>
+        <label class="layer-pill">
+          <input type="checkbox" checked onchange="sgToggleSafetyMapLayer('crowd', this.checked)"/>
+          <span>👥 Crowd Hubs</span>
+        </label>
+        <label class="layer-pill">
+          <input type="checkbox" checked onchange="sgToggleSafetyMapLayer('crime', this.checked)"/>
+          <span>⚠️ Caution Areas</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Route Comparison Deck Container -->
+    <div class="safe-route-deck mt-md" id="safeRouteDeckContainer">
+      <div class="empty-state">
+        <i class="fas fa-map-location-dot"></i>
+        <p>Enter a destination above to calculate the safest route options<br/>with Crime, Lighting, CCTV, and Police coverage breakdown.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB: FAKE CALL (Module 8: Fake Call Generator & Discreet Escape Helper) -->
+  <section class="tab-panel" id="tab-fake-call">
+    <div class="panel-header">
+      <div>
+        <h3><i class="fas fa-phone-arrow-down-left text-primary"></i> Fake Call Generator</h3>
+        <span class="panel-subtitle">Discreet escape helper with synthesized audio, custom caller &amp; timer</span>
+      </div>
+      <div class="safety-indicator-badge"><i class="fas fa-user-secret"></i> Escape Helper Active</div>
+    </div>
+
+    <!-- Active Scheduled Call Countdown HUD -->
+    <div class="fake-call-countdown-hud hidden mt-sm" id="fakeCallCountdownPanel">
+      <div class="fc-countdown-left">
+        <div class="fc-ringing-pulse"><i class="fas fa-phone-volume"></i></div>
+        <div>
+          <div class="fc-countdown-title">Incoming call scheduled from <strong id="fcCountdownCaller">Mom</strong></div>
+          <div class="fc-countdown-sub">Screen will ring automatically when timer ends</div>
+        </div>
+      </div>
+      <div class="fc-countdown-right">
+        <span class="fc-timer-pill" id="fcCountdownRemaining">00s</span>
+        <button class="btn-cancel-fc" onclick="sgCancelScheduledCall()"><i class="fas fa-xmark"></i> Cancel</button>
+      </div>
+    </div>
+
+    <!-- Quick Escape Call Action Buttons -->
+    <div class="quick-escape-card mt-sm">
+      <div class="qec-title"><i class="fas fa-bolt text-rose"></i> Quick Escape Presets</div>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+        Tap any button below to immediately or shortly trigger a believable phone call:
+      </p>
+      <div class="quick-delay-grid">
+        <button class="btn-quick-delay" onclick="sgQuickTriggerDelay(0)">
+          <i class="fas fa-phone-incoming"></i>
+          <span>Trigger Now</span>
+          <small>Immediate</small>
+        </button>
+        <button class="btn-quick-delay" onclick="sgQuickTriggerDelay(10)">
+          <i class="fas fa-stopwatch"></i>
+          <span>In 10 Sec</span>
+          <small>Quick exit</small>
+        </button>
+        <button class="btn-quick-delay" onclick="sgQuickTriggerDelay(30)">
+          <i class="fas fa-clock"></i>
+          <span>In 30 Sec</span>
+          <small>Graceful excuse</small>
+        </button>
+        <button class="btn-quick-delay" onclick="sgQuickTriggerDelay(60)">
+          <i class="fas fa-hourglass-half"></i>
+          <span>In 1 Min</span>
+          <small>Planned leave</small>
+        </button>
+      </div>
+    </div>
+
+    <!-- Fake Call Configuration Form -->
+    <div class="fake-call-config-card mt-md">
+      <div class="fcc-title"><i class="fas fa-sliders"></i> Customize Caller &amp; Audio</div>
+
+      <!-- Quick Caller Presets -->
+      <div class="form-group mt-sm">
+        <label>Caller Presets</label>
+        <div class="caller-presets-bar">
+          <button type="button" class="caller-preset-pill active" onclick="sgSetCallerPreset('Mom', '+91 98765 43210', '👩', 'mom_checkin')">👩 Mom</button>
+          <button type="button" class="caller-preset-pill" onclick="sgSetCallerPreset('Dad', '+91 98765 12345', '👨', 'mom_checkin')">👨 Dad</button>
+          <button type="button" class="caller-preset-pill" onclick="sgSetCallerPreset('Manager / Boss', '+91 99887 76655', '👔', 'boss_urgent')">👔 Boss</button>
+          <button type="button" class="caller-preset-pill" onclick="sgSetCallerPreset('Priya (Friend)', '+91 98112 23344', '👱‍♀️', 'friend_pickup')">👱‍♀️ Friend</button>
+          <button type="button" class="caller-preset-pill" onclick="sgSetCallerPreset('Cab Driver', '+91 91234 56789', '🚕', 'brother_location')">🚕 Cab</button>
+          <button type="button" class="caller-preset-pill" onclick="sgSetCallerPreset('Police Officer', '112 / +91 100', '👮‍♂️', 'brother_location')">👮‍♂️ Police</button>
+        </div>
+      </div>
+
+      <!-- Caller Details -->
+      <div class="form-row-2 mt-sm">
+        <div class="form-group">
+          <label>Caller Name <span class="req">*</span></label>
+          <input type="text" id="fcCallerNameInput" value="Mom" placeholder="e.g. Mom, Boss, Uber Driver"/>
+        </div>
+        <div class="form-group">
+          <label>Caller Phone Number <span class="req">*</span></label>
+          <input type="text" id="fcCallerNumberInput" value="+91 98765 43210" placeholder="+91 XXXXX XXXXX"/>
+        </div>
+      </div>
+
+      <div class="form-row-2 mt-sm">
+        <div class="form-group">
+          <label>Caller Avatar Icon</label>
+          <select id="fcCallerAvatarSelect">
+            <option value="👩" selected>👩 Mother / Woman</option>
+            <option value="👨">👨 Father / Man</option>
+            <option value="👔">👔 Boss / Manager</option>
+            <option value="👱‍♀️">👱‍♀️ Best Friend</option>
+            <option value="🚕">🚕 Cab / Uber Driver</option>
+            <option value="👮‍♂️">👮‍♂️ Police Officer</option>
+            <option value="🏢">🏢 Office Desk</option>
+            <option value="📞">📞 Unknown Number</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Ringtone Melodies</label>
+          <div class="input-with-btn">
+            <select id="fcRingtoneSelect">
+              <option value="marimba" selected>🎵 Marimba Chime (Standard)</option>
+              <option value="classic_bell">🔔 Classic Phone Bell</option>
+              <option value="radar_electronic">📡 Modern Radar Pulse</option>
+              <option value="gentle_harp">✨ Gentle Harp Arpeggio</option>
+            </select>
+            <button type="button" class="btn-icon-addon" onclick="sgPreviewSelectedRingtone()" title="Play Preview">
+              <i class="fas fa-play"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Voice Playback on Answer -->
+      <div class="form-group mt-sm">
+        <label>Voice Playback Upon Answering</label>
+        <div class="input-with-btn">
+          <select id="fcVoiceSelect">
+            <option value="mom_checkin" selected>🗣️ Mom: "Where are you? Dinner is ready, hurry home!"</option>
+            <option value="friend_pickup">🗣️ Friend: "I'm waiting outside in the car, come out now!"</option>
+            <option value="boss_urgent">🗣️ Boss: "Urgent project escalation, join bridge immediately."</option>
+            <option value="brother_location">🗣️ Brother: "Reached gate entrance. Come outside quickly."</option>
+          </select>
+          <button type="button" class="btn-icon-addon" id="btnPreviewVoice" onclick="sgPreviewCustomVoice()" title="Preview Dialogue">
+            <i class="fas fa-volume-high"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Custom Voice Recording Box -->
+      <div class="custom-voice-box mt-sm">
+        <div class="cvb-header">
+          <span><i class="fas fa-microphone-lines"></i> Record Custom Voice Note (Optional)</span>
+          <span id="voiceRecordStatus" class="cvb-status">No custom voice recorded</span>
+        </div>
+        <div class="cvb-actions">
+          <button type="button" class="btn-outline btn-sm" id="btnRecordVoice" onclick="sgToggleCustomVoiceRecord()">
+            <i class="fas fa-microphone"></i> Record Your Voice
+          </button>
+        </div>
+      </div>
+
+      <!-- Delay Timing -->
+      <div class="form-group mt-sm">
+        <label>Call Schedule Timing</label>
+        <select id="fcDelaySelect" onchange="sgOnDelayChange(this)">
+          <option value="0">⚡ Trigger Immediately (0 seconds)</option>
+          <option value="10">⏱️ In 10 Seconds</option>
+          <option value="30">⏱️ In 30 Seconds</option>
+          <option value="60">⏱️ In 1 Minute</option>
+          <option value="120">⏱️ In 2 Minutes</option>
+          <option value="300">⏱️ In 5 Minutes</option>
+          <option value="600">⏱️ In 10 Minutes</option>
+          <option value="custom">⚙️ Custom Delay Duration…</option>
+        </select>
+      </div>
+
+      <!-- Custom Delay Duration Row (Hidden by default) -->
+      <div class="form-row-2 mt-sm hidden" id="fcCustomDelayRow">
+        <div class="form-group">
+          <label>Custom Minutes</label>
+          <input type="number" id="fcCustomMin" min="0" max="60" value="0"/>
+        </div>
+        <div class="form-group">
+          <label>Custom Seconds</label>
+          <input type="number" id="fcCustomSec" min="0" max="59" value="15"/>
+        </div>
+      </div>
+
+      <div class="form-actions mt-md">
+        <button type="button" class="btn-primary full-width" onclick="sgScheduleFakeCall()">
+          <i class="fas fa-phone-arrow-down-left"></i> Schedule / Start Fake Call
+        </button>
+      </div>
+    </div>
+
+    <!-- Fake Call History Log -->
+    <div class="fake-call-history-section mt-md">
+      <div class="panel-header">
+        <div>
+          <h4><i class="fas fa-clock-rotate-left"></i> Recent Fake Calls</h4>
+          <span class="panel-subtitle">Logs of scheduled &amp; triggered escape calls</span>
+        </div>
+        <button class="btn-accent" onclick="sgLoadFakeCallHistory()"><i class="fas fa-arrows-rotate"></i> Refresh</button>
+      </div>
+      <div class="fake-call-history-list mt-sm" id="fakeCallHistoryList">
+        <div class="empty-state-sm"><i class="fas fa-clock-rotate-left"></i> No fake calls logged yet</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB: AI SAFETY ASSISTANT (Module 9: AI Chatbot Assistant) -->
+  <section class="tab-panel" id="tab-chatbot">
+    <div class="panel-header">
+      <div>
+        <h3><i class="fas fa-robot text-primary"></i> AI Safety Assistant</h3>
+        <span class="panel-subtitle">24/7 Safety Guidance, Police/Hospital Lookup &amp; First Aid</span>
+      </div>
+      <div class="chat-header-actions">
+        <button class="btn-accent" onclick="sgClearChatHistory()"><i class="fas fa-trash"></i> Clear Chat</button>
+      </div>
+    </div>
+
+    <!-- Chat Quick Prompts Chips Bar -->
+    <div class="chat-prompts-bar mt-sm">
+      <button class="chat-prompt-pill danger" onclick="sgSendQuickPrompt('I need emergency help right now!')">
+        <i class="fas fa-siren-on"></i> Emergency Help
+      </button>
+      <button class="chat-prompt-pill" onclick="sgSendQuickPrompt('Find the nearest verified police station to my location')">
+        <i class="fas fa-shield-halved"></i> Find Police
+      </button>
+      <button class="chat-prompt-pill" onclick="sgSendQuickPrompt('Find the closest emergency hospital near me')">
+        <i class="fas fa-hospital"></i> Find Hospital
+      </button>
+      <button class="chat-prompt-pill" onclick="sgSendQuickPrompt('First aid procedures for minor burns')">
+        <i class="fas fa-kit-medical"></i> Burns First Aid
+      </button>
+      <button class="chat-prompt-pill" onclick="sgSendQuickPrompt('First aid for severe bleeding and cuts')">
+        <i class="fas fa-droplet"></i> Bleeding First Aid
+      </button>
+      <button class="chat-prompt-pill" onclick="sgSendQuickPrompt('What is a Zero FIR and what are my legal rights?')">
+        <i class="fas fa-scale-balanced"></i> Zero FIR Rights
+      </button>
+      <button class="chat-prompt-pill" onclick="sgSendQuickPrompt('I am walking home alone at night. What safety precautions should I follow?')">
+        <i class="fas fa-person-walking"></i> Walking Alone
+      </button>
+    </div>
+
+    <!-- Main Chat Window Card -->
+    <div class="chatbot-container-card mt-sm">
+      <div class="chat-messages-thread" id="chatMessagesThread">
+        <!-- Messages rendered dynamically via chatbot.js -->
+      </div>
+
+      <!-- Chat Input Toolbar -->
+      <div class="chat-input-toolbar">
+        <button type="button" class="btn-chat-voice" id="chatVoiceBtn" onclick="sgToggleChatVoiceInput()" title="Voice Speech-to-Text Input">
+          <i class="fas fa-microphone"></i>
+        </button>
+        <input type="text" id="chatInput" placeholder="Ask AI safety assistant… (e.g. 'nearest police station', 'legal help')" onkeydown="if(event.key==='Enter') sgSendChatMessage()"/>
+        <button type="button" class="btn-chat-send" id="chatSendBtn" onclick="sgSendChatMessage()">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB: PROFILE (Personal, Medical, Emergency) -->
+  <section class="tab-panel" id="tab-profile">
+    <div class="panel-header">
+      <h3>User Profile &amp; Safety Data</h3>
+      <button class="btn-accent" onclick="openEditProfile()"><i class="fas fa-pen"></i> Edit Personal</button>
+    </div>
+    <div id="profileView"></div>
+  </section>
+
+  <!-- TAB: EVIDENCE -->
+  <section class="tab-panel" id="tab-evidence">
+    <div class="panel-header">
+      <h3><i class="fas fa-film"></i> Evidence &amp; Logs</h3>
+      <button class="btn-accent" onclick="clearEvidence()"><i class="fas fa-trash"></i> Clear</button>
+    </div>
+
+    <!-- SOS History -->
+    <div class="evidence-section">
+      <div class="evidence-section-title"><i class="fas fa-siren-on"></i> SOS Trigger History</div>
+      <div id="sosHistoryList" class="sos-history-list">
+        <div class="evidence-empty" id="sosHistoryEmpty"><i class="fas fa-shield-check"></i><span>No SOS events recorded</span></div>
+      </div>
+    </div>
+
+    <!-- Recordings -->
+    <div class="evidence-section">
+      <div class="evidence-section-title"><i class="fas fa-video"></i> Recorded Evidence</div>
+      <div id="recordingsList" class="recordings-list">
+        <div class="evidence-empty" id="recordingsEmpty"><i class="fas fa-video-slash"></i><span>No recordings yet</span></div>
+      </div>
+    </div>
+
+    <!-- Location Log -->
+    <div class="evidence-section">
+      <div class="evidence-section-title"><i class="fas fa-map-pin"></i> Location Log</div>
+      <div id="locationLogList" class="location-log-list">
+        <div class="evidence-empty" id="locationLogEmpty"><i class="fas fa-location-crosshairs"></i><span>No location entries yet</span></div>
+      </div>
+    </div>
+
+    <!-- Voice Detection Log -->
+    <div class="evidence-section">
+      <div class="evidence-section-title"><i class="fas fa-microphone-lines"></i> Voice Detection Log</div>
+      <ul id="evidenceVoiceLog" class="evidence-voice-log">
+        <li class="evidence-empty"><i class="fas fa-ear-listen"></i><span>No voice events yet</span></li>
+      </ul>
+    </div>
+
+    <!-- Export -->
+    <button class="btn-export-log" onclick="exportLog()">
+      <i class="fas fa-file-arrow-down"></i> Export Full Log as .txt
+    </button>
+  </section>
+
+</main>
+
+<!-- ── SOS ACTIVE OVERLAY ── -->
+<div class="sos-active-overlay hidden" id="sosOverlay">
+  <div class="sos-active-card">
+    <div class="sos-active-icon flashing"><i class="fas fa-siren-on"></i></div>
+    <h1>SOS ACTIVATED</h1>
+    <p id="sosAlertMsg">Notifying your emergency contacts…</p>
+    <div class="sos-active-list" id="sosAlertList"></div>
+
+    <!-- Police notification -->
+    <div class="police-notif hidden" id="policeNotif">
+      <div class="police-notif-header">
+        <div class="police-badge">🚔</div>
+        <div>
+          <div class="police-notif-title">Complaint Sent to Nearest Police Station</div>
+          <div class="police-notif-sub">Authorities notified with your live location</div>
+        </div>
+      </div>
+      <div class="police-notif-divider"></div>
+      <div class="police-calm-msg">
+        <i class="fas fa-heart"></i>
+        <span>Please try to stay calm — we are there for you 💙</span>
+      </div>
+    </div>
+
+    <div class="sos-active-info">
+      <div><i class="fas fa-location-dot"></i><span id="sosLocText">Getting location…</span></div>
+      <div><i class="fas fa-video"></i><span id="sosRecText">Starting recording…</span></div>
+      <video id="sosVideoPreview" class="hidden" autoplay playsinline muted style="width:100%;max-height:180px;border-radius:10px;margin-top:6px;object-fit:cover;background:#000;"></video>
+      <div id="sosMotionInfo" class="hidden"><i class="fas fa-mobile-screen-button"></i><span>Shake detected</span></div>
+    </div>
+
+    <button class="btn-cancel-sos" onclick="cancelSOS()">I'm Safe — Cancel SOS</button>
+  </div>
+</div>
+
+<!-- ── EDIT PERSONAL PROFILE MODAL ── -->
+<div class="modal-overlay hidden" id="editProfileModal">
+  <div class="modal-card">
+    <h2><i class="fas fa-user-pen"></i> Edit Personal Profile</h2>
+    <div class="form-group"><label>Full Name <span class="req">*</span></label><input type="text" id="ep_name"/></div>
+    <div class="form-group"><label>Email Address</label><input type="email" id="ep_email"/></div>
+    <div class="form-group"><label>Age</label><input type="number" id="ep_age" min="1" max="120"/></div>
+    <div class="form-group"><label>Home Address</label><input type="text" id="ep_address"/></div>
+    <div class="form-row-3">
+      <div class="form-group"><label>City</label><input type="text" id="ep_city"/></div>
+      <div class="form-group"><label>State</label><input type="text" id="ep_state"/></div>
+      <div class="form-group"><label>PIN</label><input type="text" id="ep_pin"/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="closeEditProfile()">Cancel</button>
+      <button class="btn-primary" onclick="sgUpdatePersonalProfile()">Save Profile</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── EDIT MEDICAL INFORMATION MODAL ── -->
+<div class="modal-overlay hidden" id="editMedicalModal">
+  <div class="modal-card">
+    <h2><i class="fas fa-heart-pulse"></i> Edit Medical Information</h2>
+    <div class="form-group">
+      <label>Blood Group <span class="req">*</span></label>
+      <select id="med_blood">
+        <option value="Unknown">Unknown</option>
+        <option value="A+">A+</option><option value="A−">A−</option>
+        <option value="B+">B+</option><option value="B−">B−</option>
+        <option value="AB+">AB+</option><option value="AB−">AB−</option>
+        <option value="O+">O+</option><option value="O−">O−</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Medical Conditions</label><input type="text" id="med_conditions" placeholder="e.g. Asthma, Epilepsy, Hypertension"/></div>
+    <div class="form-group"><label>Allergies</label><input type="text" id="med_allergies" placeholder="e.g. Penicillin, Peanuts, Latex"/></div>
+    <div class="form-group"><label>Current Medication</label><input type="text" id="med_medication" placeholder="e.g. Inhaler twice daily"/></div>
+    <div class="form-group"><label>Additional Medical Information</label><textarea id="med_notes" rows="2" class="form-textarea" placeholder="Crucial notes for first responders"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="closeEditMedical()">Cancel</button>
+      <button class="btn-primary" onclick="sgUpdateMedicalInfo()">Save Medical Info</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── EDIT EMERGENCY DETAILS MODAL ── -->
+<div class="modal-overlay hidden" id="editEmergencyModal">
+  <div class="modal-card">
+    <h2><i class="fas fa-phone-volume"></i> Edit Emergency Details</h2>
+    <div class="form-group"><label>Primary Contact Name <span class="req">*</span></label><input type="text" id="em_name"/></div>
+    <div class="form-group"><label>Emergency Phone Number <span class="req">*</span></label><input type="tel" id="em_phone"/></div>
+    <div class="form-group">
+      <label>Relationship</label>
+      <select id="em_rel">
+        <option value="Family">Family</option>
+        <option value="Mother">Mother</option>
+        <option value="Father">Father</option>
+        <option value="Sibling">Sibling</option>
+        <option value="Partner">Partner</option>
+        <option value="Friend">Friend</option>
+        <option value="Colleague">Colleague</option>
+        <option value="Neighbor">Neighbor</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Special Instructions</label><textarea id="em_notes" rows="2" class="form-textarea" placeholder="e.g. Call home phone if mobile unreachable"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="closeEditEmergency()">Cancel</button>
+      <button class="btn-primary" onclick="sgUpdateEmergencyDetails()">Save Emergency Details</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast hidden" id="toast"></div>
+
+<!-- ── ADD EMERGENCY CONTACT MODAL (Module 2) ── -->
+<div class="modal-overlay hidden" id="addContactModal">
+  <div class="modal-card">
+    <h2><i class="fas fa-user-plus"></i> Add Emergency Contact</h2>
+    <div class="form-group">
+      <label>Contact Name <span class="req">*</span></label>
+      <input type="text" id="newContactName" placeholder="e.g. Mom, Brother, Priya"/>
+    </div>
+    <div class="form-group">
+      <label>Mobile Number <span class="req">*</span></label>
+      <div class="input-prefix-wrap">
+        <span class="input-prefix">+91</span>
+        <input type="tel" id="newContactPhone" placeholder="10-digit mobile number" maxlength="10"/>
+      </div>
+    </div>
+    <div class="form-row-2">
+      <div class="form-group">
+        <label>Relationship <span class="req">*</span></label>
+        <select id="newContactRel">
+          <option value="Mother">Mother</option>
+          <option value="Father">Father</option>
+          <option value="Sister">Sister</option>
+          <option value="Brother">Brother</option>
+          <option value="Sibling">Sibling</option>
+          <option value="Partner">Partner</option>
+          <option value="Spouse">Spouse</option>
+          <option value="Friend">Friend</option>
+          <option value="Best Friend">Best Friend</option>
+          <option value="Relative">Relative</option>
+          <option value="Uncle">Uncle</option>
+          <option value="Aunt">Aunt</option>
+          <option value="Colleague">Colleague</option>
+          <option value="Neighbor">Neighbor</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Priority <span class="req">*</span></label>
+        <select id="newContactPriority">
+          <option value="1">Priority 1 (Primary / Urgent)</option>
+          <option value="2">Priority 2 (High)</option>
+          <option value="3">Priority 3 (Medium)</option>
+          <option value="4">Priority 4</option>
+          <option value="5">Priority 5</option>
+          <option value="6">Priority 6</option>
+          <option value="7">Priority 7</option>
+          <option value="8">Priority 8</option>
+          <option value="9">Priority 9</option>
+          <option value="10">Priority 10</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Contact Group <span class="req">*</span></label>
+      <select id="newContactGroup">
+        <option value="Family">Family</option>
+        <option value="Friends">Friends</option>
+        <option value="Relatives">Relatives</option>
+        <option value="Colleagues">Colleagues</option>
+        <option value="Neighbors">Neighbors</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+
+    <div id="addContactError" class="auth-alert error hidden"></div>
+
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="closeAddContact()">Cancel</button>
+      <button class="btn-primary" onclick="saveContact()"><i class="fas fa-check"></i> Save Contact</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── EDIT EMERGENCY CONTACT MODAL (One-Click Update) ── -->
+<div class="modal-overlay hidden" id="editContactModal">
+  <div class="modal-card">
+    <h2><i class="fas fa-user-pen"></i> Edit Emergency Contact</h2>
+    <input type="hidden" id="editContactId"/>
+
+    <div class="form-group">
+      <label>Contact Name <span class="req">*</span></label>
+      <input type="text" id="editContactName"/>
+    </div>
+    <div class="form-group">
+      <label>Mobile Number <span class="req">*</span></label>
+      <div class="input-prefix-wrap">
+        <span class="input-prefix">+91</span>
+        <input type="tel" id="editContactPhone" maxlength="10"/>
+      </div>
+    </div>
+    <div class="form-row-2">
+      <div class="form-group">
+        <label>Relationship <span class="req">*</span></label>
+        <select id="editContactRel">
+          <option value="Mother">Mother</option>
+          <option value="Father">Father</option>
+          <option value="Sister">Sister</option>
+          <option value="Brother">Brother</option>
+          <option value="Sibling">Sibling</option>
+          <option value="Partner">Partner</option>
+          <option value="Spouse">Spouse</option>
+          <option value="Friend">Friend</option>
+          <option value="Best Friend">Best Friend</option>
+          <option value="Relative">Relative</option>
+          <option value="Uncle">Uncle</option>
+          <option value="Aunt">Aunt</option>
+          <option value="Colleague">Colleague</option>
+          <option value="Neighbor">Neighbor</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Priority <span class="req">*</span></label>
+        <select id="editContactPriority">
+          <option value="1">Priority 1 (Primary)</option>
+          <option value="2">Priority 2 (High)</option>
+          <option value="3">Priority 3 (Medium)</option>
+          <option value="4">Priority 4</option>
+          <option value="5">Priority 5</option>
+          <option value="6">Priority 6</option>
+          <option value="7">Priority 7</option>
+          <option value="8">Priority 8</option>
+          <option value="9">Priority 9</option>
+          <option value="10">Priority 10</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Contact Group <span class="req">*</span></label>
+      <select id="editContactGroup">
+        <option value="Family">Family</option>
+        <option value="Friends">Friends</option>
+        <option value="Relatives">Relatives</option>
+        <option value="Colleagues">Colleagues</option>
+        <option value="Neighbors">Neighbors</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+
+    <div id="editContactError" class="auth-alert error hidden"></div>
+
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="closeEditContactModal()">Cancel</button>
+      <button class="btn-primary" onclick="sgSaveEditedContact()"><i class="fas fa-check"></i> Update Contact</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── DELETE CONFIRMATION MODAL ── -->
+<div class="modal-overlay hidden" id="deleteConfirmModal">
+  <div class="modal-card delete-confirm-card">
+    <div class="modal-icon pulse-red"><i class="fas fa-triangle-exclamation"></i></div>
+    <h2>Delete Emergency Contact?</h2>
+    <p>Are you sure you want to remove <strong id="deleteContactTargetName" style="color:var(--text)">this contact</strong> from your emergency alert list?</p>
+    <div class="modal-actions mt-sm">
+      <button class="btn-outline" onclick="closeDeleteConfirmModal()">Cancel</button>
+      <button class="btn-danger" onclick="sgExecuteDeleteContact()"><i class="fas fa-trash-can"></i> Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD SAFE ZONE / GEOFENCE MODAL ── -->
+<div class="modal-overlay hidden" id="addGeofenceModal">
+  <div class="modal-card">
+    <h2><i class="fas fa-shield-heart text-success"></i> Add Safe Zone (Geofence)</h2>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
+      Define a safe geographical boundary. You will receive an instant alert whenever you leave or re-enter this area.
+    </p>
+    <div class="form-group">
+      <label>Safe Zone Name <span class="req">*</span></label>
+      <input type="text" id="gfName" placeholder="e.g. Home, University Campus, Office"/>
+    </div>
+    <div class="form-group">
+      <label>Safe Zone Radius (Meters)</label>
+      <select id="gfRadius">
+        <option value="200">200 meters (Immediate Building)</option>
+        <option value="500" selected>500 meters (Neighborhood / Campus)</option>
+        <option value="1000">1,000 meters (1 km Safe Radius)</option>
+        <option value="2000">2,000 meters (2 km Safe Perimeter)</option>
+      </select>
+    </div>
+    <p style="font-size:12px;color:var(--lavender);margin-bottom:14px;">
+      <i class="fas fa-location-crosshairs"></i> Centers automatically at your current high-accuracy GPS coordinates.
+    </p>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="closeAddGeofenceModal()">Cancel</button>
+      <button class="btn-primary" onclick="sgCreateGeofenceFromModal()"><i class="fas fa-check"></i> Save Safe Zone</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SET DESTINATION MODAL ── -->
+<div class="modal-overlay hidden" id="setDestinationModal">
+  <div class="modal-card">
+    <h2><i class="fas fa-route text-rose"></i> Set Navigation Destination</h2>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
+      Select a safety hub or enter custom coordinates to begin real-time navigation and safe route analysis.
+    </p>
+    <div class="form-group">
+      <label>Quick Select Safe Destination</label>
+      <div class="quick-dest-buttons">
+        <button type="button" class="btn-outline" onclick="sgQuickSetPoliceDestination()">
+          <i class="fas fa-shield-halved"></i> Nearest Police Station
+        </button>
+        <button type="button" class="btn-outline" onclick="sgQuickSetHomeDestination()">
+          <i class="fas fa-house"></i> Home Address
+        </button>
+      </div>
+    </div>
+    <div class="form-group mt-sm">
+      <label>Or Destination Name</label>
+      <input type="text" id="destCustomName" placeholder="e.g. City Central Metro Station"/>
+    </div>
+    <div class="form-row-2">
+      <div class="form-group">
+        <label>Latitude</label>
+        <input type="number" step="any" id="destCustomLat" placeholder="e.g. 17.3850"/>
+      </div>
+      <div class="form-group">
+        <label>Longitude</label>
+        <input type="number" step="any" id="destCustomLng" placeholder="e.g. 78.4867"/>
+      </div>
+    </div>
+    <div class="modal-actions mt-sm">
+      <button class="btn-outline" onclick="closeSetDestinationModal()">Cancel</button>
+      <button class="btn-primary" onclick="sgApplyCustomDestination()"><i class="fas fa-location-arrow"></i> Calculate Route</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SETTINGS MODAL ── -->
+<div class="modal-overlay hidden" id="settingsModal">
+  <div class="modal-card">
+    <h2><i class="fas fa-sliders"></i> Settings</h2>
+    <div class="form-group mt-sm">
+      <label>SOS Hold Duration</label>
+      <select id="holdDuration">
+        <option value="2">2 seconds</option>
+        <option value="3" selected>3 seconds</option>
+        <option value="5">5 seconds</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Voice Trigger Keyword</label>
+      <div class="keyword-input-wrap">
+        <input type="text" id="settingsKeywordInput" placeholder='e.g. "help me"'/>
+        <button class="save-kw-btn" onclick="saveKeywordFromSettings()"><i class="fas fa-check"></i></button>
+      </div>
+    </div>
+
+    <!-- Smart SOS Hardware Integration -->
+    <div class="sub-form-card mt-sm">
+      <div class="sub-form-title"><i class="fab fa-bluetooth-b"></i> External SOS Hardware Triggers</div>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+        Connect wearable fobs, Bluetooth panic buttons, or smartwatch triggers directly to the central SOS handler.
+      </p>
+      <div style="display:flex;gap:8px;flex-direction:column;">
+        <button class="btn-outline full-width" onclick="sgPairBluetoothPanicButton()">
+          <i class="fab fa-bluetooth"></i> Pair Bluetooth Panic Button
+        </button>
+        <button class="btn-outline full-width" onclick="activateSOS('bluetooth')">
+          <i class="fas fa-tower-broadcast"></i> Test Panic Button Trigger
+        </button>
+      </div>
+    </div>
+
+    <div class="perm-status-section">
+      <h3 style="margin-bottom:8px">Permission Status</h3>
+      <div class="perm-status-list" id="permStatusList"></div>
+      <button class="btn-outline full-width mt-sm" onclick="openPermModal()">
+        <i class="fas fa-key"></i> Manage Permissions
+      </button>
+    </div>
+    <button class="btn-primary full-width mt-sm" onclick="closeSettings()">Done</button>
+  </div>
+</div>
+
+<!-- ── FULLSCREEN INCOMING FAKE CALL MODAL (Module 8) ── -->
+<div class="modal-overlay hidden fc-incoming-overlay" id="fakeCallIncomingModal">
+  <div class="fc-call-screen">
+    <div class="fc-caller-header">
+      <div class="fc-avatar-wrap">
+        <div class="fc-avatar-pulse"></div>
+        <div class="fc-avatar-circle" id="fcIncomingAvatar">👩</div>
+      </div>
+      <h2 class="fc-caller-name" id="fcIncomingName">Mom</h2>
+      <div class="fc-caller-number" id="fcIncomingNumber">+91 98765 43210</div>
+      <div class="fc-call-status"><i class="fas fa-phone-volume fc-ringing-icon"></i> Incoming call…</div>
+    </div>
+
+    <div class="fc-incoming-actions">
+      <!-- Decline -->
+      <button class="fc-btn-decline" onclick="sgDeclineFakeCall('REJECTED')">
+        <div class="fc-circle-btn decline"><i class="fas fa-phone-slash"></i></div>
+        <span>Decline</span>
+      </button>
+
+      <!-- Accept -->
+      <button class="fc-btn-accept" onclick="sgAcceptFakeCall()">
+        <div class="fc-circle-btn accept pulse-green"><i class="fas fa-phone"></i></div>
+        <span>Accept</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── FULLSCREEN CONNECTED FAKE CALL MODAL (Module 8) ── -->
+<div class="modal-overlay hidden fc-connected-overlay" id="fakeCallConnectedModal">
+  <div class="fc-call-screen connected">
+    <div class="fc-caller-header">
+      <div class="fc-avatar-circle connected" id="fcConnectedAvatar">👩</div>
+      <h2 class="fc-caller-name" id="fcConnectedName">Mom</h2>
+      <div class="fc-call-timer" id="fcConnectedDuration">00:00</div>
+      <div class="fc-audio-wave">
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <div class="fc-keypad-grid">
+      <div class="fc-key-item"><i class="fas fa-microphone-slash"></i><span>Mute</span></div>
+      <div class="fc-key-item"><i class="fas fa-table-cells"></i><span>Keypad</span></div>
+      <div class="fc-key-item"><i class="fas fa-volume-high"></i><span>Speaker</span></div>
+    </div>
+
+    <div class="fc-connected-actions">
+      <button class="fc-btn-endcall" onclick="sgEndConnectedFakeCall()">
+        <div class="fc-circle-btn decline"><i class="fas fa-phone-slash"></i></div>
+        <span>End Call</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     LOAD ALL JS MODULES (plain scripts, no module)
+════════════════════════════════════════════════ -->
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/contacts.js"></script>
+<script src="js/recorder.js"></script>
+<script src="js/location.js"></script>
+<script src="js/safe_route.js"></script>
+<script src="js/fake_call.js"></script>
+<script src="js/chatbot.js"></script>
+<script src="js/sms.js"></script>
+<script src="js/voice.js"></script>
+<script src="js/motion.js"></script>
+<script src="js/emergency.js"></script>
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let contacts     = JSON.parse(localStorage.getItem('sg_contacts') || '[]');
+let keyword      = localStorage.getItem('sg_keyword') || 'help me';
+let perms        = JSON.parse(localStorage.getItem('sg_perms') || '{"mic":false,"loc":false,"motion":false}');
+let userProfile  = JSON.parse(localStorage.getItem('sg_profile') || 'null');
+let isSOSActive  = false;
+let voiceRunning = false;
+let nightMode    = false;
+let nightInterval= null;
+let sosHoldTimeout = null;
+
+// Password visibility helper
+function togglePassVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const isPass = input.type === 'password';
+  input.type = isPass ? 'text' : 'password';
+  if (btn) {
+    btn.innerHTML = `<i class="fas fa-${isPass ? 'eye-slash' : 'eye'}"></i>`;
+  }
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('keywordInput').value         = keyword;
+  document.getElementById('settingsKeywordInput').value = keyword;
+
+  // Load public emergency helplines
+  if (typeof sgLoadHelplines === 'function') sgLoadHelplines();
+
+  // Step 1: Check authentication state
+  const isAuthenticated = await sgCheckAuthState();
+
+  if (!isAuthenticated) {
+    // Auth modal is shown by sgCheckAuthState()
+    return;
+  }
+
+  // User is authenticated — load user contacts from database
+  if (typeof sgLoadEmergencyContacts === 'function') {
+    await sgLoadEmergencyContacts();
+  } else {
+    renderContacts();
+  }
+
+  // Load Module 4 Geofences and Family Sharing Locations
+  if (typeof sgLoadGeofences === 'function') sgLoadGeofences();
+  if (typeof sgLoadFamilyLocations === 'function') sgLoadFamilyLocations();
+
+  // Load Module 8 Fake Call history
+  if (typeof sgInitFakeCall === 'function') sgInitFakeCall();
+
+  // Load Module 9 AI Chatbot Assistant history
+  if (typeof sgInitChatbot === 'function') sgInitChatbot();
+
+  renderProfileView();
+  updatePermStatusList();
+  renderSOSHistory();
+  renderRecordings();
+  renderLocationLog();
+  renderVoiceEvidence();
+  _setEvidenceBadge();
+
+  // Step 2: If permissions missing → show permission modal
+  if (!perms.mic || !perms.loc || !perms.motion) {
+    setTimeout(() => {
+      document.getElementById('permissionModal').classList.remove('hidden');
+      syncPermUI();
+    }, 400);
+  } else {
+    startAllMonitoring();
+  }
+
+  checkNightMode();
+  setInterval(checkNightMode, 60000);
+});
+
+// ── RENDER PROFILE VIEW (Personal, Medical, Emergency Cards) ──
+function renderProfileView() {
+  const el = document.getElementById('profileView');
+  if (!el) return;
+  if (!userProfile) {
+    el.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">No profile loaded. Please log in.</p>';
+    return;
+  }
+  const p = userProfile;
+  const bloodClass = (p.blood && p.blood !== 'Unknown') ? 'blood-badge' : 'blood-badge muted';
+
+  el.innerHTML = `
+    <!-- Hero Card -->
+    <div class="profile-hero">
+      <div class="profile-avatar">${p.name ? p.name[0].toUpperCase() : '?'}</div>
+      <div class="profile-hero-info">
+        <h3>${p.name || 'User'}</h3>
+        <span class="profile-phone"><i class="fas fa-phone"></i> +91 ${p.phone} <span class="verified-tag"><i class="fas fa-check-circle"></i> Verified</span></span>
+        ${p.email ? `<span class="profile-email"><i class="fas fa-envelope"></i> ${p.email}</span>` : ''}
+      </div>
+    </div>
+
+    <!-- 1. PERSONAL INFORMATION -->
+    <div class="profile-section">
+      <div class="profile-section-header">
+        <div class="profile-section-title"><i class="fas fa-user"></i> Personal Details</div>
+        <button class="btn-card-edit" onclick="openEditProfile()"><i class="fas fa-pen"></i> Edit</button>
+      </div>
+      <div class="profile-grid">
+        <div class="profile-field"><span class="pf-label">Full Name</span><span class="pf-val">${p.name || '—'}</span></div>
+        <div class="profile-field"><span class="pf-label">Age</span><span class="pf-val">${p.age ? p.age + ' yrs' : '—'}</span></div>
+        <div class="profile-field full"><span class="pf-label">Address</span><span class="pf-val">${[p.address, p.city, p.state, p.pin].filter(Boolean).join(', ') || 'Not specified'}</span></div>
+      </div>
+    </div>
+
+    <!-- 2. MEDICAL INFORMATION -->
+    <div class="profile-section medical-info-section">
+      <div class="profile-section-header">
+        <div class="profile-section-title"><i class="fas fa-heart-pulse"></i> Medical Information</div>
+        <button class="btn-card-edit" onclick="openEditMedical()"><i class="fas fa-pen"></i> Edit</button>
+      </div>
+      <div class="profile-grid">
+        <div class="profile-field blood-field">
+          <span class="pf-label">Blood Group</span>
+          <span class="pf-val ${bloodClass}">${p.blood || 'Unknown'}</span>
+        </div>
+        <div class="profile-field"><span class="pf-label">Conditions</span><span class="pf-val">${p.medicalConditions || 'None reported'}</span></div>
+        <div class="profile-field"><span class="pf-label">Allergies</span><span class="pf-val">${p.allergies || 'None reported'}</span></div>
+        <div class="profile-field"><span class="pf-label">Current Medication</span><span class="pf-val">${p.currentMedication || 'None'}</span></div>
+        ${p.additionalMedicalInformation ? `<div class="profile-field full"><span class="pf-label">Additional Medical Notes</span><span class="pf-val">${p.additionalMedicalInformation}</span></div>` : ''}
+      </div>
+    </div>
+
+    <!-- 3. EMERGENCY DETAILS -->
+    <div class="profile-section emergency-section">
+      <div class="profile-section-header">
+        <div class="profile-section-title"><i class="fas fa-phone-volume"></i> Primary Emergency Contact</div>
+        <button class="btn-card-edit" onclick="openEditEmergency()"><i class="fas fa-pen"></i> Edit</button>
+      </div>
+      <div class="em-contact-card">
+        <div class="em-avatar">${p.emname ? p.emname[0].toUpperCase() : 'E'}</div>
+        <div class="em-info">
+          <strong>${p.emname || 'No Emergency Contact Added'}</strong>
+          <span>${p.emphone || '—'}</span>
+          <span class="contact-rel">${p.emrel || 'Family'}</span>
+          ${p.emergencyInformation ? `<span class="em-note-text"><i class="fas fa-info-circle"></i> ${p.emergencyInformation}</span>` : ''}
+        </div>
+        <div class="em-sos-badge"><i class="fas fa-siren-on"></i> Primary SOS</div>
+      </div>
+    </div>
+  `;
+}
+
+// ── EDIT MODAL OPEN/CLOSE HANDLERS ──
+function openEditProfile() {
+  if (!userProfile) return;
+  const p = userProfile;
+  document.getElementById('ep_name').value    = p.name    || '';
+  document.getElementById('ep_email').value   = p.email   || '';
+  document.getElementById('ep_age').value     = p.age     || '';
+  document.getElementById('ep_address').value = p.address || '';
+  document.getElementById('ep_city').value    = p.city    || '';
+  document.getElementById('ep_state').value   = p.state   || '';
+  document.getElementById('ep_pin').value     = p.pin     || '';
+  document.getElementById('editProfileModal').classList.remove('hidden');
+}
+function closeEditProfile() { document.getElementById('editProfileModal').classList.add('hidden'); }
+
+function openEditMedical() {
+  if (!userProfile) return;
+  const p = userProfile;
+  document.getElementById('med_blood').value      = p.blood || 'Unknown';
+  document.getElementById('med_conditions').value = p.medicalConditions || '';
+  document.getElementById('med_allergies').value  = p.allergies || '';
+  document.getElementById('med_medication').value = p.currentMedication || '';
+  document.getElementById('med_notes').value      = p.additionalMedicalInformation || '';
+  document.getElementById('editMedicalModal').classList.remove('hidden');
+}
+function closeEditMedical() { document.getElementById('editMedicalModal').classList.add('hidden'); }
+
+function openEditEmergency() {
+  if (!userProfile) return;
+  const p = userProfile;
+  document.getElementById('em_name').value  = p.emname || '';
+  document.getElementById('em_phone').value = p.emphone || '';
+  document.getElementById('em_rel').value   = p.emrel || 'Family';
+  document.getElementById('em_notes').value = p.emergencyInformation || '';
+  document.getElementById('editEmergencyModal').classList.remove('hidden');
+}
+function closeEditEmergency() { document.getElementById('editEmergencyModal').classList.add('hidden'); }
+
+// ═══════════════════════════════════════════
+// NIGHT MODE — auto ON 6 PM to 6 AM
+// ═══════════════════════════════════════════
+function checkNightMode() {
+  const h = new Date().getHours();
+  const shouldBeNight = (h >= 18 || h < 6);
+  if (shouldBeNight !== nightMode) applyNightMode(shouldBeNight);
+}
+
+function applyNightMode(on) {
+  nightMode = on;
+  const html   = document.documentElement;
+  const banner = document.getElementById('nightBanner');
+  const strip  = document.getElementById('nightStatusStrip');
+
+  if (on) {
+    html.setAttribute('data-night', 'true');
+    banner.classList.remove('hidden');
+    strip.classList.remove('hidden');
+    if (nightInterval) clearInterval(nightInterval);
+    nightInterval = setInterval(nightTick, 10000);
+    showToast('🌙 Night Mode ON — Enhanced monitoring active', 'info');
+  } else {
+    html.removeAttribute('data-night');
+    banner.classList.add('hidden');
+    strip.classList.add('hidden');
+    if (nightInterval) { clearInterval(nightInterval); nightInterval = null; }
+  }
+  updateStatusIndicator();
+}
+
+function nightTick() {
+  const locTimeEl = document.getElementById('locTime');
+  if (locTimeEl && locTimeEl.textContent !== '—') {
+    locTimeEl.textContent = '🌙 ' + new Date().toLocaleTimeString();
+  }
+}
+
+// ═══════════════════════════════════════════
+// START ALL MONITORING
+// ═══════════════════════════════════════════
+function startAllMonitoring() {
+  // Voice recognition
+  if (perms.mic) {
+    const FALLBACK_PHRASES = ['help me', 'help', 'bachao', 'danger', 'emergency', 'save me'];
+    sgStartVoiceRecognition((transcripts) => {
+      for (const text of transcripts) {
+        if (text.includes(keyword.toLowerCase())) {
+          activateSOS('voice');
+          return;
+        }
+        for (const ph of FALLBACK_PHRASES) {
+          if (text.includes(ph)) { activateSOS('voice'); return; }
+        }
+      }
+    });
+    voiceRunning = true;
+  }
+
+  // Motion
+  if (perms.motion) {
+    sgStartMotionMonitor((source) => {
+      if (!isSOSActive) activateSOS(source === 'phone_fall' ? 'motion' : 'motion');
+    });
+  }
+}
+
+// ═══════════════════════════════════════════
+// PERMISSIONS
+// ═══════════════════════════════════════════
+function syncPermUI() {
+  ['mic','loc','motion','notif'].forEach(key => {
+    if (!perms[key]) return;
+    const cap = key.charAt(0).toUpperCase() + key.slice(1);
+    document.getElementById('perm-' + key)?.classList.add('granted');
+    const btn = document.getElementById('grant' + cap + 'Btn');
+    if (btn) btn.innerHTML = '<i class="fas fa-check"></i>';
+  });
+  checkAllGranted();
+}
+
+function checkAllGranted() {
+  const btn  = document.getElementById('continueBtn');
+  const note = document.querySelector('.perm-note');
+  if (perms.mic && perms.loc && perms.motion) {
+    if (btn)  btn.disabled = false;
+    if (note) note.textContent = "Permissions granted. You're protected!";
+  }
+}
+
+function savePerms() {
+  localStorage.setItem('sg_perms', JSON.stringify(perms));
+  updatePermStatusList();
+  checkAllGranted();
+}
+
+// ── MICROPHONE ─────────────────────────────────────
+async function requestMic() {
+  const btn = document.getElementById('grantMicBtn');
+  if (btn) btn.textContent = 'Requesting…';
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach(t => t.stop());
+
+    perms.mic = true;
+    savePerms();
+
+    document.getElementById('perm-mic').classList.add('granted');
+    if (btn) btn.innerHTML = '<i class="fas fa-check"></i>';
+    showToast('Microphone access granted ✓');
+    sgLog('Microphone permission granted.', 'success');
+  } catch (err) {
+    if (btn) btn.textContent = 'Grant';
+    showToast('Microphone denied. Please allow in browser settings.', 'error');
+    sgLog(`Microphone denied: ${err.message}`, 'error');
+  }
+}
+
+// ── LOCATION ──────────────────────────────────────
+function requestLocation() {
+  const btn = document.getElementById('grantLocBtn');
+  if (btn) btn.textContent = 'Requesting…';
+
+  if (!navigator.geolocation) {
+    showToast('Geolocation not supported', 'error');
+    if (btn) btn.textContent = 'Grant';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      window._sgCachedLat = position.coords.latitude;
+      window._sgCachedLng = position.coords.longitude;
+
+      perms.loc = true;
+      savePerms();
+
+      document.getElementById('perm-loc').classList.add('granted');
+      if (btn) btn.innerHTML = '<i class="fas fa-check"></i>';
+      showToast('Location access granted ✓');
+      sgLog(`Location granted: ${window._sgCachedLat.toFixed(5)}, ${window._sgCachedLng.toFixed(5)}`, 'success');
+    },
+    (error) => {
+      if (btn) btn.textContent = 'Grant';
+      const msgs = {
+        1: 'Location denied. Please allow in browser settings.',
+        2: 'Location unavailable. Check GPS.',
+        3: 'Location request timed out.',
+      };
+      showToast(msgs[error.code] || 'Location error', 'error');
+      sgLog(`Location denied: ${error.message}`, 'error');
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
+}
+
+// ── MOTION ────────────────────────────────────────
+async function requestMotionPerm() {
+  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+    try {
+      const res = await DeviceMotionEvent.requestPermission();
+      if (res === 'granted') {
+        perms.motion = true;
+        savePerms();
+        _grantMotionUI();
+      } else {
+        showToast('Motion permission denied', 'error');
+      }
+    } catch(e) {
+      showToast('Could not request motion permission', 'error');
+    }
+  } else {
+    perms.motion = true;
+    savePerms();
+    _grantMotionUI();
+  }
+}
+
+function _grantMotionUI() {
+  document.getElementById('perm-motion').classList.add('granted');
+  document.getElementById('grantMotionBtn').innerHTML = '<i class="fas fa-check"></i>';
+  showToast('Motion sensor ready ✓');
+}
+
+// ── PUSH NOTIFICATIONS ────────────────────────────
+async function requestNotifPerm() {
+  const btn = document.getElementById('grantNotifBtn');
+  if (btn) btn.textContent = 'Requesting…';
+  if (!('Notification' in window)) {
+    showToast('Push notifications not supported on this browser', 'warning');
+    if (btn) btn.textContent = 'Unsupported';
+    return;
+  }
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm === 'granted') {
+      perms.notif = true;
+      savePerms();
+      document.getElementById('perm-notif')?.classList.add('granted');
+      if (btn) btn.innerHTML = '<i class="fas fa-check"></i>';
+      showToast('Push notifications enabled ✓');
+      sgLog('Push notification permission granted.', 'success');
+    } else {
+      showToast('Notifications denied. Please allow in browser settings.', 'warning');
+      if (btn) btn.textContent = 'Grant';
+    }
+  } catch(e) {
+    if (btn) btn.textContent = 'Grant';
+  }
+}
+
+function openPermModal() {
+  closeSettings();
+  document.getElementById('permissionModal').classList.remove('hidden');
+  syncPermUI();
+}
+
+function closePermModal() {
+  if (!perms.mic || !perms.loc || !perms.motion) {
+    showToast('Please grant core permissions to continue', 'error');
+    return;
+  }
+  document.getElementById('permissionModal').classList.add('hidden');
+  startAllMonitoring();
+  checkNightMode();
+}
+
+function updatePermStatusList() {
+  const el = document.getElementById('permStatusList');
+  if (!el) return;
+  const items = [
+    { label:'Microphone',    granted:perms.mic,    icon:'fa-microphone' },
+    { label:'Location',      granted:perms.loc,    icon:'fa-location-dot' },
+    { label:'Motion Sensor', granted:perms.motion, icon:'fa-mobile-screen-button' },
+    { label:'Notifications', granted:perms.notif || (typeof Notification !== 'undefined' && Notification.permission === 'granted'), icon:'fa-bell' },
+  ];
+  el.innerHTML = items.map(i => `
+    <div class="perm-status-item">
+      <i class="fas ${i.icon}"></i>
+      <span>${i.label}</span>
+      <span class="perm-badge ${i.granted ? 'ok' : 'no'}">${i.granted ? 'Active' : 'Not granted'}</span>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════
+// STATUS INDICATOR
+// ═══════════════════════════════════════════
+function updateStatusIndicator() {
+  if (isSOSActive) return;
+  const pill = document.getElementById('statusPill');
+  const dot  = document.getElementById('statusDot');
+  const txt  = document.getElementById('statusText');
+  if (nightMode) {
+    pill.className  = 'status-pill night-status-pill';
+    dot.className   = 'status-dot night';
+    txt.textContent = 'Night Watch';
+  } else {
+    pill.className  = 'status-pill';
+    dot.className   = 'status-dot';
+    txt.textContent = 'Safe';
+  }
+}
+
+// ═══════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'fake-call') {
+    if (typeof sgLoadFakeCallHistory === 'function') sgLoadFakeCallHistory();
+  }
+  if (name === 'chatbot') {
+    if (typeof sgLoadChatHistory === 'function') sgLoadChatHistory();
+  }
+  if (name === 'location' || name === 'safe-route') {
+    if (typeof sgLoadGeofences === 'function') sgLoadGeofences();
+    if (typeof sgLoadFamilyLocations === 'function') sgLoadFamilyLocations();
+    if (typeof sgLoadAndDrawSafetyLayers === 'function') sgLoadAndDrawSafetyLayers();
+    if (typeof _leafletMap !== 'undefined' && _leafletMap) {
+      setTimeout(() => _leafletMap.invalidateSize(), 150);
+    }
+    if (name === 'safe-route') {
+      const lat = (typeof _cachedLat !== 'undefined' && _cachedLat) ? _cachedLat : 28.6139;
+      const lng = (typeof _cachedLng !== 'undefined' && _cachedLng) ? _cachedLng : 77.2090;
+      if (typeof _initSafeRouteMap === 'function') {
+        _initSafeRouteMap(lat, lng);
+      }
+      if (typeof _safeRouteLeafletMap !== 'undefined' && _safeRouteLeafletMap) {
+        setTimeout(() => _safeRouteLeafletMap.invalidateSize(), 150);
+      }
+      const origEl = document.getElementById('safeRouteOriginDisplay');
+      if (origEl && typeof _cachedLat !== 'undefined' && _cachedLat && typeof _cachedLng !== 'undefined' && _cachedLng) {
+        origEl.value = `📍 Current GPS: ${_cachedLat.toFixed(4)}, ${_cachedLng.toFixed(4)}`;
+      }
+    }
+  }
+}
+
+// ═══════════════════════════════════════════
+// SOS BUTTON HOLD
+// ═══════════════════════════════════════════
+function startSOSTap(e) {
+  if (e) e.preventDefault();
+  if (isSOSActive) return;
+  const dur = parseInt(document.getElementById('holdDuration')?.value || 3) * 1000;
+  document.getElementById('sosBtn').classList.add('pressing');
+  document.getElementById('sosCountdown').classList.remove('hidden');
+  document.getElementById('sosHint').classList.add('hidden');
+  document.getElementById('countdownNum').textContent = Math.ceil(dur / 1000);
+  document.getElementById('countdownBar').style.transition = 'none';
+  document.getElementById('countdownBar').style.width = '100%';
+  setTimeout(() => {
+    document.getElementById('countdownBar').style.transition = `width ${dur}ms linear`;
+    document.getElementById('countdownBar').style.width = '0%';
+  }, 20);
+  sosHoldTimeout = setTimeout(() => activateSOS('hold'), dur);
+}
+
+function endSOSTap() {
+  document.getElementById('sosBtn').classList.remove('pressing');
+  if (sosHoldTimeout) { clearTimeout(sosHoldTimeout); sosHoldTimeout = null; }
+  document.getElementById('sosCountdown').classList.add('hidden');
+  document.getElementById('sosHint').classList.remove('hidden');
+  document.getElementById('countdownBar').style.transition = 'none';
+  document.getElementById('countdownBar').style.width = '100%';
+}
+
+// ═══════════════════════════════════════════
+// ACTIVATE / CANCEL SOS
+// ═══════════════════════════════════════════
+function activateSOS(method) {
+  if (isSOSActive) return;
+  isSOSActive = true;
+
+  sgStopVoiceRecognition();
+  voiceRunning = false;
+
+  document.getElementById('sosBtn').classList.add('active-sos');
+  document.getElementById('sosRing').classList.add('alarm');
+  document.getElementById('statusPill').className = 'status-pill danger';
+  document.getElementById('statusDot').className  = 'status-dot red';
+  document.getElementById('statusText').textContent = 'ALERT';
+  document.getElementById('sosOverlay').classList.remove('hidden');
+  document.getElementById('policeNotif').classList.add('hidden');
+  document.getElementById('sosMotionInfo').classList.add(
+    method === 'motion' || method === 'phone_shake' || method === 'phone_fall' ? '' : 'hidden'
+  );
+  if (method === 'motion' || method === 'phone_shake' || method === 'phone_fall') {
+    document.getElementById('sosMotionInfo').classList.remove('hidden');
+  }
+
+  const methodLabel = {
+    voice:       '🎙 Voice trigger detected!',
+    motion:      '📳 Shake / impact detected!',
+    phone_shake: '📳 Shake detected!',
+    phone_fall:  '📲 Fall detected!',
+    hold:        '🔴 SOS hold activated!',
+  }[method] || 'SOS activated.';
+  document.getElementById('sosAlertMsg').textContent = methodLabel;
+
+  document.getElementById('sosAlertList').innerHTML = contacts.map(c => `
+    <div class="alert-contact">
+      <i class="fas fa-user-circle"></i>
+      <span>${c.name}</span>
+      <span class="sending-badge"><i class="fas fa-paper-plane"></i> Sending…</span>
+    </div>`).join('');
+
+  sgRunEmergency(method).then(() => {
+    setTimeout(() => {
+      document.querySelectorAll('.sending-badge').forEach(b => {
+        if (!b.classList.contains('done')) {
+          b.innerHTML = '<i class="fas fa-check"></i> Notified';
+          b.classList.add('done');
+        }
+      });
+    }, 2500);
+  });
+
+  const cachedLat = window._sgCachedLat || null;
+  const cachedLng = window._sgCachedLng || null;
+  logSOSEvent(method, cachedLat, cachedLng);
+
+  _setEvidenceBadge();
+}
+
+function cancelSOS() {
+  isSOSActive = false;
+  sgCancelEmergency();
+
+  document.getElementById('sosBtn').classList.remove('active-sos');
+  document.getElementById('sosRing').classList.remove('alarm');
+  document.getElementById('sosOverlay').classList.add('hidden');
+  document.getElementById('policeNotif').classList.add('hidden');
+  document.getElementById('sosMotionInfo').classList.add('hidden');
+  updateStatusIndicator();
+  showToast("SOS cancelled. Stay safe 💗");
+
+  if (perms.mic) {
+    const FALLBACK_PHRASES = ['help me', 'help', 'bachao', 'danger', 'emergency', 'save me'];
+    sgStartVoiceRecognition((transcripts) => {
+      for (const text of transcripts) {
+        if (text.includes(keyword.toLowerCase())) { activateSOS('voice'); return; }
+        for (const ph of FALLBACK_PHRASES) {
+          if (text.includes(ph)) { activateSOS('voice'); return; }
+        }
+      }
+    });
+    voiceRunning = true;
+  }
+}
+
+// ═══════════════════════════════════════════
+// CONTACTS
+// ═══════════════════════════════════════════
+function renderContacts() {
+  const list  = document.getElementById('contactsList');
+  const empty = document.getElementById('contactsEmpty');
+  if (!contacts.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  list.innerHTML = contacts.map(c => `
+    <div class="contact-card">
+      <div class="contact-avatar">${c.name[0].toUpperCase()}</div>
+      <div class="contact-info">
+        <strong>${c.name}</strong>
+        <span>${c.phone}</span>
+        <span class="contact-rel">${c.rel}</span>
+      </div>
+      <button class="icon-btn danger" onclick="deleteContact(${c.id})"><i class="fas fa-trash-can"></i></button>
+    </div>`).join('');
+}
+
+function saveContacts() { localStorage.setItem('sg_contacts', JSON.stringify(contacts)); }
+function openAddContact() { document.getElementById('addContactModal').classList.remove('hidden'); }
+function closeAddContact() {
+  document.getElementById('addContactModal').classList.add('hidden');
+  document.getElementById('newContactName').value  = '';
+  document.getElementById('newContactPhone').value = '';
+}
+function saveContact() {
+  const name  = document.getElementById('newContactName').value.trim();
+  const phone = document.getElementById('newContactPhone').value.trim();
+  if (!name || !phone) { showToast('Please fill all fields', 'error'); return; }
+  contacts.push({ id: Date.now(), name, phone, rel: document.getElementById('newContactRel').value });
+  saveContacts(); renderContacts(); closeAddContact();
+  showToast(`${name} added ✓`);
+}
+function deleteContact(id) {
+  contacts = contacts.filter(c => c.id !== id);
+  saveContacts(); renderContacts();
+  showToast('Contact removed');
+}
+
+// ═══════════════════════════════════════════
+// KEYWORD
+// ═══════════════════════════════════════════
+function saveKeyword() {
+  keyword = document.getElementById('keywordInput').value.trim() || keyword;
+  localStorage.setItem('sg_keyword', keyword);
+  document.getElementById('settingsKeywordInput').value = keyword;
+  document.getElementById('voiceStatusMsg').textContent = `Listening for "${keyword}"…`;
+  showToast(`Keyword saved: "${keyword}"`);
+  if (voiceRunning && perms.mic) {
+    sgStopVoiceRecognition();
+    const FALLBACK_PHRASES = ['help me', 'help', 'bachao', 'danger', 'emergency', 'save me'];
+    sgStartVoiceRecognition((transcripts) => {
+      for (const text of transcripts) {
+        if (text.includes(keyword.toLowerCase())) { activateSOS('voice'); return; }
+        for (const ph of FALLBACK_PHRASES) {
+          if (text.includes(ph)) { activateSOS('voice'); return; }
+        }
+      }
+    });
+  }
+}
+
+function saveKeywordFromSettings() {
+  keyword = document.getElementById('settingsKeywordInput').value.trim() || keyword;
+  localStorage.setItem('sg_keyword', keyword);
+  document.getElementById('keywordInput').value = keyword;
+  showToast(`Keyword saved: "${keyword}"`);
+}
+
+// ═══════════════════════════════════════════
+// LIVE LOCATION TAB (Module 4)
+// ═══════════════════════════════════════════
+function startLocation() {
+  if (!navigator.geolocation) { showToast('Geolocation not supported', 'error'); return; }
+  if (!perms.loc) { showToast('Please grant location permission first', 'error'); return; }
+
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+
+    window._sgCachedLat = lat;
+    window._sgCachedLng = lng;
+
+    sgInitMap(lat, lng);
+    sgStartTracking();
+    showToast('Live GPS Map & Tracking enabled ✓');
+  }, (err) => {
+    showToast('Could not get location: ' + err.message, 'error');
+  }, { enableHighAccuracy: true });
+}
+
+function openAddGeofenceModal() {
+  document.getElementById('addGeofenceModal')?.classList.remove('hidden');
+}
+
+function closeAddGeofenceModal() {
+  document.getElementById('addGeofenceModal')?.classList.add('hidden');
+}
+
+function openSetDestinationModal() {
+  document.getElementById('setDestinationModal')?.classList.remove('hidden');
+}
+
+function closeSetDestinationModal() {
+  document.getElementById('setDestinationModal')?.classList.add('hidden');
+}
+
+async function sgQuickSetPoliceDestination() {
+  closeSetDestinationModal();
+  try {
+    const loc = await sgGetLocation();
+    showToast('Finding nearest verified police station…');
+    const stations = await sgFindPolice(loc.lat, loc.lng, 10000);
+    if (stations.length > 0) {
+      const nearest = stations[0];
+      await sgSetDestination(nearest.lat, nearest.lng, nearest.name);
+      showToast(`Route set to: ${nearest.name} ✓`);
+    } else {
+      showToast('No police station found nearby. Setting direct destination.', 'warning');
+      await sgSetDestination(loc.lat + 0.02, loc.lng + 0.02, 'Police Post Central');
+    }
+  } catch (e) {
+    showToast('Could not locate police station: ' + e.message, 'error');
+  }
+}
+
+async function sgQuickSetHomeDestination() {
+  closeSetDestinationModal();
+  const profile = JSON.parse(localStorage.getItem('sg_profile') || 'null');
+  const homeAddr = profile?.address ? `${profile.address}, ${profile.city || ''}` : 'Home';
+
+  try {
+    const loc = await sgGetLocation();
+    // Use home destination (offset relative to current position)
+    const homeLat = loc.lat + 0.015;
+    const homeLng = loc.lng + 0.012;
+    await sgSetDestination(homeLat, homeLng, `Home (${homeAddr})`);
+    showToast(`Route set to Home (${homeAddr}) ✓`);
+  } catch (e) {
+    showToast('Could not get current location for home routing', 'error');
+  }
+}
+
+function sgApplyCustomDestination() {
+  const name = document.getElementById('destCustomName')?.value.trim() || 'Custom Destination';
+  const lat = parseFloat(document.getElementById('destCustomLat')?.value);
+  const lng = parseFloat(document.getElementById('destCustomLng')?.value);
+
+  if (isNaN(lat) || isNaN(lng)) {
+    showToast('Please enter valid numerical latitude and longitude', 'error');
+    return;
+  }
+
+  closeSetDestinationModal();
+  sgSetDestination(lat, lng, name);
+  showToast(`Route set to "${name}" ✓`);
+}
+
+// ═══════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════
+function openSettings() {
+  document.getElementById('settingsKeywordInput').value = keyword;
+  updatePermStatusList();
+  document.getElementById('settingsModal').classList.remove('hidden');
+}
+function closeSettings() {
+  document.getElementById('settingsModal').classList.add('hidden');
+}
+
+// ═══════════════════════════════════════════
+// EVIDENCE & LOGS
+// ═══════════════════════════════════════════
+let _sosHistory    = JSON.parse(localStorage.getItem('sg_sos_history')    || '[]');
+let _locationLog   = JSON.parse(localStorage.getItem('sg_location_log')   || '[]');
+let _voiceEvidence = JSON.parse(localStorage.getItem('sg_voice_evidence') || '[]');
+let _recordings    = [];
+
+function logSOSEvent(method, lat, lng) {
+  const entry = {
+    id:        Date.now(),
+    time:      new Date().toLocaleString(),
+    method:    method,
+    lat:       lat  || null,
+    lng:       lng  || null,
+  };
+  _sosHistory.unshift(entry);
+  if (_sosHistory.length > 20) _sosHistory.pop();
+  localStorage.setItem('sg_sos_history', JSON.stringify(_sosHistory));
+  renderSOSHistory();
+  _setEvidenceBadge(_sosHistory.length);
+}
+
+function sgStoreRecording(blobUrl, filename, sizeKB, label) {
+  const entry = {
+    id:       Date.now(),
+    time:     new Date().toLocaleString(),
+    blobUrl,
+    filename,
+    sizeKB,
+    label,
+  };
+  _recordings.unshift(entry);
+  if (_recordings.length > 10) _recordings.pop();
+  renderRecordings();
+  _setEvidenceBadge();
+}
+
+function logLocationEntry(lat, lng, note) {
+  const entry = {
+    time:  new Date().toLocaleString(),
+    lat,
+    lng,
+    note:  note || '',
+    maps:  `https://maps.google.com/?q=${lat},${lng}`,
+  };
+  _locationLog.unshift(entry);
+  if (_locationLog.length > 50) _locationLog.pop();
+  localStorage.setItem('sg_location_log', JSON.stringify(_locationLog));
+  renderLocationLog();
+}
+
+function sgLogVoiceEvidence(text, triggered) {
+  const entry = {
+    time:      new Date().toLocaleTimeString(),
+    text,
+    triggered,
+  };
+  _voiceEvidence.unshift(entry);
+  if (_voiceEvidence.length > 30) _voiceEvidence.pop();
+  localStorage.setItem('sg_voice_evidence', JSON.stringify(_voiceEvidence));
+  renderVoiceEvidence();
+}
+
+async function renderSOSHistory() {
+  const list  = document.getElementById('sosHistoryList');
+  const empty = document.getElementById('sosHistoryEmpty');
+  if (!list) return;
+
+  const token = localStorage.getItem('sg_token');
+  let incidentsToRender = [];
+
+  if (token) {
+    try {
+      const res = await fetch('/api/sos/history', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.incidents)) {
+        incidentsToRender = data.incidents.map(inc => ({
+          id: inc.id,
+          method: inc.triggerSource,
+          time: new Date(inc.triggeredAt || inc.createdAt).toLocaleString(),
+          lat: inc.latitude,
+          lng: inc.longitude,
+          status: inc.status,
+          smsStatus: inc.smsStatus,
+        }));
+      }
+    } catch (err) {
+      // fallback to local history
+    }
+  }
+
+  if (incidentsToRender.length === 0) {
+    incidentsToRender = _sosHistory;
+  }
+
+  list.querySelectorAll('.sos-history-item').forEach(e => e.remove());
+  if (incidentsToRender.length === 0) {
+    if (empty) empty.style.display = 'flex';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  const methodIcon = {
+    voice: 'fa-microphone',
+    motion: 'fa-mobile-screen-button',
+    hold: 'fa-hand',
+    button: 'fa-hand-pointer',
+    phone_shake: 'fa-mobile-screen-button',
+    phone_fall: 'fa-arrow-down',
+    bluetooth: 'fa-bluetooth',
+    smartwatch: 'fa-clock',
+    power_button: 'fa-power-off'
+  };
+
+  const methodLabel = {
+    voice: 'Voice Command',
+    motion: 'Motion / Shake',
+    hold: 'SOS Button Hold',
+    button: 'SOS Button',
+    phone_shake: 'Phone Shake',
+    phone_fall: 'Fall Impact',
+    bluetooth: 'Bluetooth Panic Button',
+    smartwatch: 'Smartwatch Trigger',
+    power_button: 'Power Button (3-5x)'
+  };
+
+  incidentsToRender.forEach(e => {
+    const div = document.createElement('div');
+    div.className = 'sos-history-item';
+    const statusText = e.status || 'RESOLVED';
+    const isResolved = statusText === 'RESOLVED';
+    div.innerHTML = `
+      <div class="shi-icon"><i class="fas ${methodIcon[e.method] || 'fa-siren-on'}"></i></div>
+      <div class="shi-info">
+        <strong>${methodLabel[e.method] || e.method}</strong>
+        <span>${e.time}</span>
+        ${e.lat ? `<a href="https://maps.google.com/?q=${e.lat},${e.lng}" target="_blank" class="shi-loc"><i class="fas fa-location-dot"></i> ${Number(e.lat).toFixed(4)}, ${Number(e.lng).toFixed(4)}</a>` : '<span class="shi-loc muted">Location unavailable</span>'}
+      </div>
+      <span class="shi-badge ${isResolved ? 'resolved' : 'active'}">${statusText}</span>`;
+    list.appendChild(div);
+  });
+}
+
+function renderRecordings() {
+  const list  = document.getElementById('recordingsList');
+  const empty = document.getElementById('recordingsEmpty');
+  if (!list) return;
+  list.querySelectorAll('.recording-item').forEach(e => e.remove());
+  if (_recordings.length === 0) {
+    if (empty) empty.style.display = 'flex';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  _recordings.forEach(r => {
+    const isVideo = r.label.includes('Video');
+    const div = document.createElement('div');
+    div.className = 'recording-item';
+    div.innerHTML = `
+      <div class="rec-meta">
+        <div class="rec-icon"><i class="fas ${isVideo ? 'fa-video' : 'fa-microphone'}"></i></div>
+        <div class="rec-info">
+          <strong>${r.label}</strong>
+          <span>${r.time} &nbsp;·&nbsp; ${r.sizeKB} KB</span>
+        </div>
+        <a href="${r.blobUrl}" download="${r.filename}" class="rec-dl-btn" title="Download">
+          <i class="fas fa-download"></i>
+        </a>
+      </div>
+      ${isVideo
+        ? `<video src="${r.blobUrl}" controls class="rec-player" preload="metadata"></video>`
+        : `<audio src="${r.blobUrl}" controls class="rec-player"></audio>`
+      }`;
+    list.appendChild(div);
+  });
+}
+
+function renderLocationLog() {
+  const list  = document.getElementById('locationLogList');
+  const empty = document.getElementById('locationLogEmpty');
+  if (!list) return;
+  list.querySelectorAll('.loc-log-item').forEach(e => e.remove());
+  if (_locationLog.length === 0) {
+    if (empty) empty.style.display = 'flex';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  _locationLog.slice(0, 15).forEach(e => {
+    const div = document.createElement('div');
+    div.className = 'loc-log-item';
+    div.innerHTML = `
+      <i class="fas fa-location-dot"></i>
+      <div class="lli-info">
+        <span>${e.lat.toFixed(5)}, ${e.lng.toFixed(5)}</span>
+        <span class="lli-time">${e.time}${e.note ? ' · ' + e.note : ''}</span>
+      </div>
+      <a href="${e.maps}" target="_blank" class="lli-map-btn"><i class="fas fa-map"></i></a>`;
+    list.appendChild(div);
+  });
+}
+
+function renderVoiceEvidence() {
+  const ul = document.getElementById('evidenceVoiceLog');
+  if (!ul) return;
+  ul.querySelectorAll('.vev-item').forEach(e => e.remove());
+  const empty = ul.querySelector('.evidence-empty');
+  if (_voiceEvidence.length === 0) {
+    if (empty) empty.style.display = 'flex';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  _voiceEvidence.slice(0, 20).forEach(e => {
+    const li = document.createElement('li');
+    li.className = `vev-item ${e.triggered ? 'triggered' : ''}`;
+    li.innerHTML = `
+      <span class="vev-time">${e.time}</span>
+      <span class="vev-text">"${e.text.slice(0, 60)}"</span>
+      ${e.triggered ? '<span class="vev-badge">TRIGGERED</span>' : ''}`;
+    ul.appendChild(li);
+  });
+}
+
+function _setEvidenceBadge(count) {
+  const btn = document.getElementById('evidenceTabBtn');
+  if (!btn) return;
+  const existing = btn.querySelector('.ev-badge');
+  const total = (_sosHistory.length + _recordings.length) || count;
+  if (!total) { if (existing) existing.remove(); return; }
+  if (existing) { existing.textContent = total; return; }
+  const badge = document.createElement('span');
+  badge.className = 'ev-badge';
+  badge.textContent = total;
+  btn.appendChild(badge);
+}
+
+function exportLog() {
+  const lines = ['SheGuard Evidence Log', `Exported: ${new Date().toLocaleString()}`, '='.repeat(50), ''];
+
+  lines.push('SOS HISTORY');
+  lines.push('-'.repeat(30));
+  if (_sosHistory.length === 0) lines.push('No SOS events.');
+  _sosHistory.forEach(e => {
+    lines.push(`[${e.time}] Method: ${e.method}${e.lat ? ` | Location: ${e.lat.toFixed(5)},${e.lng.toFixed(5)}` : ''}`);
+  });
+
+  lines.push('', 'LOCATION LOG');
+  lines.push('-'.repeat(30));
+  if (_locationLog.length === 0) lines.push('No location entries.');
+  _locationLog.forEach(e => {
+    lines.push(`[${e.time}] ${e.lat.toFixed(5)}, ${e.lng.toFixed(5)}${e.note ? ' — ' + e.note : ''} | ${e.maps}`);
+  });
+
+  lines.push('', 'VOICE DETECTION LOG');
+  lines.push('-'.repeat(30));
+  if (_voiceEvidence.length === 0) lines.push('No voice events.');
+  _voiceEvidence.forEach(e => {
+    lines.push(`[${e.time}]${e.triggered ? ' [TRIGGERED]' : ''} "${e.text}"`);
+  });
+
+  lines.push('', 'RECORDINGS');
+  lines.push('-'.repeat(30));
+  if (_recordings.length === 0) lines.push('No recordings this session.');
+  _recordings.forEach(r => {
+    lines.push(`[${r.time}] ${r.label} — ${r.sizeKB} KB — ${r.filename}`);
+  });
+
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `sheguard-log-${sgTimestamp()}.txt`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  showToast('Log exported ✓');
+}
+
+function clearEvidence() {
+  _sosHistory    = [];
+  _locationLog   = [];
+  _voiceEvidence = [];
+  _recordings    = [];
+  localStorage.removeItem('sg_sos_history');
+  localStorage.removeItem('sg_location_log');
+  localStorage.removeItem('sg_voice_evidence');
+  renderSOSHistory(); renderRecordings(); renderLocationLog(); renderVoiceEvidence();
+  _setEvidenceBadge(0);
+  showToast('Evidence cleared');
+}
+
+let toastTimer;
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type}`;
+  t.classList.remove('hidden');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add('hidden'), 3200);
+}
+</script>
+</body>
+</html>

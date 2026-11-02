@@ -1,0 +1,28 @@
+{
+  "name": "sheguard-backend",
+  "version": "1.0.0",
+  "description": "SHE-GUARD Women Safety Application - Authentication & Backend APIs",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js",
+    "test": "node test/api_test.js"
+  },
+  "keywords": [
+    "sheguard",
+    "women-safety",
+    "authentication",
+    "sos",
+    "otp"
+  ],
+  "author": "SHE-GUARD Team",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "sqlite3": "^5.1.7"
+  }
+}
